@@ -1,6 +1,41 @@
 @import "tailwindcss";
 
 @theme {
-  --font-jetbrains-mono: var(--font-jetbrains-mono), monospace;
-  --font-ibm-plex-mono: var(--font-ibm-plex-mono), monospace;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+}
+
+/* ─── CodeBlock / Shiki output ───────────────────────────────────────── */
+.code-block-body pre {
+  background: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+.code-block-body code {
+  display: block;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem; /* text-xs */
+  line-height: 1.25rem; /* leading-5 */
+  padding: 0.75rem 0;
+  counter-reset: line;
+}
+
+.code-block-body .line {
+  display: flex;
+  padding: 0 0.75rem;
+  counter-increment: line;
+}
+
+.code-block-body .line::before {
+  content: counter(line);
+  display: inline-block;
+  width: 1.5rem;
+  min-width: 1.5rem;
+  margin-right: 1rem;
+  padding-right: 0.5rem;
+  text-align: right;
+  color: #52525b; /* zinc-600 */
+  border-right: 1px solid #2a2a2a;
+  user-select: none;
+  flex-shrink: 0;
 }
