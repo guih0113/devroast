@@ -5,14 +5,20 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "biome lint ./src",
+    "format": "biome format ./src --write",
+    "check": "biome check ./src"
   },
   "dependencies": {
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^3.5.0",
+    "tailwind-variants": "^3.2.2"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.6",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
