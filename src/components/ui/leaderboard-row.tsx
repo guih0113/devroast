@@ -1,32 +1,35 @@
+import type { ComponentProps } from 'react'
 import { tv } from 'tailwind-variants'
 
-const leaderboardRow = tv({
+const styles = tv({
   slots: {
     root: 'flex items-center gap-6 border-b border-[#2A2A2A] px-5 py-4',
-    rank: 'font-mono text-sm text-zinc-500 w-10 shrink-0',
-    score: 'font-mono text-sm font-bold w-14 shrink-0',
-    codePreview: 'font-mono text-xs text-zinc-500 flex-1 truncate',
-    lang: 'font-mono text-xs text-zinc-600 w-24 shrink-0 text-right'
+    rank: 'w-10 shrink-0 font-mono text-sm text-zinc-500',
+    codePreview: 'flex-1 truncate font-mono text-xs text-zinc-500',
+    lang: 'w-24 shrink-0 text-right font-mono text-xs text-zinc-600'
   },
   variants: {
     scoreLevel: {
-      critical: { score: 'font-mono text-sm font-bold w-14 shrink-0 text-red-500' },
-      warning: { score: 'font-mono text-sm font-bold w-14 shrink-0 text-amber-500' },
-      good: { score: 'font-mono text-sm font-bold w-14 shrink-0 text-emerald-500' }
+      critical: { root: '' },
+      warning: { root: '' },
+      good: { root: '' }
     }
-  },
-  defaultVariants: {
-    scoreLevel: 'critical'
   }
 })
 
-type LeaderboardRowProps = {
-  rank: number
-  score: number
-  codePreview: string
-  lang: string
-  className?: string
-}
+const scoreStyles = tv({
+  base: 'w-14 shrink-0 font-mono text-sm font-bold',
+  variants: {
+    level: {
+      critical: 'text-red-500',
+      warning: 'text-amber-500',
+      good: 'text-emerald-500'
+    }
+  },
+  defaultVariants: {
+    level: 'critical'
+  }
+})
 
 function getScoreLevel(score: number): 'critical' | 'warning' | 'good' {
   if (score <= 4) return 'critical'
@@ -34,22 +37,55 @@ function getScoreLevel(score: number): 'critical' | 'warning' | 'good' {
   return 'good'
 }
 
-export function LeaderboardRow({ rank, score, codePreview, lang, className }: LeaderboardRowProps) {
-  const scoreLevel = getScoreLevel(score)
-  const {
-    root,
-    rank: rankClass,
-    score: scoreClass,
-    codePreview: codeClass,
-    lang: langClass
-  } = leaderboardRow({ scoreLevel })
-
+function Root({ className, children, ...props }: ComponentProps<'div'>) {
+  const { root } = styles()
   return (
-    <div className={root({ className })}>
-      <span className={rankClass()}>#{rank}</span>
-      <span className={scoreClass()}>{score.toFixed(1)}</span>
-      <span className={codeClass()}>{codePreview}</span>
-      <span className={langClass()}>{lang}</span>
+    <div className={root({ className })} {...props}>
+      {children}
     </div>
   )
+}
+
+function Rank({ rank, ...props }: { rank: number } & ComponentProps<'span'>) {
+  const { rank: rankClass } = styles()
+  return (
+    <span className={rankClass()} {...props}>
+      #{rank}
+    </span>
+  )
+}
+
+function Score({ score, ...props }: { score: number } & ComponentProps<'span'>) {
+  const level = getScoreLevel(score)
+  return (
+    <span className={scoreStyles({ level })} {...props}>
+      {score.toFixed(1)}
+    </span>
+  )
+}
+
+function CodePreview({ children, ...props }: ComponentProps<'span'>) {
+  const { codePreview } = styles()
+  return (
+    <span className={codePreview()} {...props}>
+      {children}
+    </span>
+  )
+}
+
+function Lang({ children, ...props }: ComponentProps<'span'>) {
+  const { lang } = styles()
+  return (
+    <span className={lang()} {...props}>
+      {children}
+    </span>
+  )
+}
+
+export const LeaderboardRow = {
+  Root,
+  Rank,
+  Score,
+  CodePreview,
+  Lang
 }

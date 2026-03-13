@@ -98,29 +98,42 @@ export default function ResultsPage() {
           <div className="flex flex-col gap-5">
             {/* Row 1 */}
             <div className="grid grid-cols-2 gap-5">
-              <AnalysisCard
-                severity="critical"
-                title="Using var instead of const/let"
-                description="Using var creates function-scoped variables which leads to hoisting bugs, unintended mutations, and hard-to-trace state. Switch to const by default, let when reassignment is needed."
-              />
-              <AnalysisCard
-                severity="warning"
-                title="Iterator loop pattern"
-                description="Old-style for loops with index tracking are verbose and error-prone. Use Array.forEach, map, or for...of for cleaner, intent-revealing iteration."
-              />
+              <AnalysisCard.Root>
+                <AnalysisCard.Badge variant="critical" />
+                <AnalysisCard.Title>Using var instead of const/let</AnalysisCard.Title>
+                <AnalysisCard.Description>
+                  Using var creates function-scoped variables which leads to hoisting bugs,
+                  unintended mutations, and hard-to-trace state. Switch to const by default, let
+                  when reassignment is needed.
+                </AnalysisCard.Description>
+              </AnalysisCard.Root>
+              <AnalysisCard.Root>
+                <AnalysisCard.Badge variant="warning" />
+                <AnalysisCard.Title>Iterator loop pattern</AnalysisCard.Title>
+                <AnalysisCard.Description>
+                  Old-style for loops with index tracking are verbose and error-prone. Use
+                  Array.forEach, map, or for...of for cleaner, intent-revealing iteration.
+                </AnalysisCard.Description>
+              </AnalysisCard.Root>
             </div>
             {/* Row 2 */}
             <div className="grid grid-cols-2 gap-5">
-              <AnalysisCard
-                severity="good"
-                title="Clear naming conventions"
-                description="Function and variable names are descriptive and clearly communicate their purpose. Good naming is the cheapest form of documentation."
-              />
-              <AnalysisCard
-                severity="warning"
-                title="No input visibility"
-                description="The function silently ignores invalid inputs — null, undefined, or non-arrays will cause cryptic runtime errors. Add guard clauses or TypeScript types."
-              />
+              <AnalysisCard.Root>
+                <AnalysisCard.Badge variant="good" />
+                <AnalysisCard.Title>Clear naming conventions</AnalysisCard.Title>
+                <AnalysisCard.Description>
+                  Function and variable names are descriptive and clearly communicate their purpose.
+                  Good naming is the cheapest form of documentation.
+                </AnalysisCard.Description>
+              </AnalysisCard.Root>
+              <AnalysisCard.Root>
+                <AnalysisCard.Badge variant="warning" />
+                <AnalysisCard.Title>No input visibility</AnalysisCard.Title>
+                <AnalysisCard.Description>
+                  The function silently ignores invalid inputs — null, undefined, or non-arrays will
+                  cause cryptic runtime errors. Add guard clauses or TypeScript types.
+                </AnalysisCard.Description>
+              </AnalysisCard.Root>
             </div>
           </div>
         </div>

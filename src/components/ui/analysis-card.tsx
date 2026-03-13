@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react'
 import { tv } from 'tailwind-variants'
 import { Badge } from './badge'
 
@@ -7,19 +8,37 @@ const analysisCard = tv({
 
 type Severity = 'critical' | 'warning' | 'good'
 
-type AnalysisCardProps = {
-  severity: Severity
-  title: string
-  description: string
-  className?: string
-}
-
-export function AnalysisCard({ severity, title, description, className }: AnalysisCardProps) {
+function Root({ className, children, ...props }: ComponentProps<'div'>) {
   return (
-    <div className={analysisCard({ className })}>
-      <Badge variant={severity} label={severity} />
-      <p className="font-mono text-sm text-zinc-100">{title}</p>
-      <p className="font-mono text-xs text-zinc-500 leading-relaxed">{description}</p>
+    <div className={analysisCard({ className })} {...props}>
+      {children}
     </div>
   )
+}
+
+function AnalysisCardBadge({ variant }: { variant: Severity }) {
+  return <Badge variant={variant} label={variant} />
+}
+
+function Title({ children, ...props }: ComponentProps<'p'>) {
+  return (
+    <p className="font-mono text-sm text-zinc-100" {...props}>
+      {children}
+    </p>
+  )
+}
+
+function Description({ children, ...props }: ComponentProps<'p'>) {
+  return (
+    <p className="font-mono text-xs text-zinc-500 leading-relaxed" {...props}>
+      {children}
+    </p>
+  )
+}
+
+export const AnalysisCard = {
+  Root,
+  Badge: AnalysisCardBadge,
+  Title,
+  Description
 }

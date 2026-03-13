@@ -98,21 +98,30 @@ export default function ComponentsPage() {
         {/* Analysis Card */}
         <Section title="analysis-card">
           <Row label="severity">
-            <AnalysisCard
-              severity="critical"
-              title="Nested callbacks exceed depth 4"
-              description="Deeply nested callbacks make the code hard to read and maintain. Consider extracting logic into named functions or using async/await."
-            />
-            <AnalysisCard
-              severity="warning"
-              title="Magic number used in condition"
-              description="The value 86400 appears without explanation. Extract it into a named constant like SECONDS_PER_DAY to clarify intent."
-            />
-            <AnalysisCard
-              severity="good"
-              title="Pure function with no side effects"
-              description="This function is deterministic and has no external dependencies. It is trivially testable and easy to reason about."
-            />
+            <AnalysisCard.Root>
+              <AnalysisCard.Badge variant="critical" />
+              <AnalysisCard.Title>Nested callbacks exceed depth 4</AnalysisCard.Title>
+              <AnalysisCard.Description>
+                Deeply nested callbacks make the code hard to read and maintain. Consider extracting
+                logic into named functions or using async/await.
+              </AnalysisCard.Description>
+            </AnalysisCard.Root>
+            <AnalysisCard.Root>
+              <AnalysisCard.Badge variant="warning" />
+              <AnalysisCard.Title>Magic number used in condition</AnalysisCard.Title>
+              <AnalysisCard.Description>
+                The value 86400 appears without explanation. Extract it into a named constant like
+                SECONDS_PER_DAY to clarify intent.
+              </AnalysisCard.Description>
+            </AnalysisCard.Root>
+            <AnalysisCard.Root>
+              <AnalysisCard.Badge variant="good" />
+              <AnalysisCard.Title>Pure function with no side effects</AnalysisCard.Title>
+              <AnalysisCard.Description>
+                This function is deterministic and has no external dependencies. It is trivially
+                testable and easy to reason about.
+              </AnalysisCard.Description>
+            </AnalysisCard.Root>
           </Row>
         </Section>
 
@@ -146,24 +155,32 @@ export default function ComponentsPage() {
         <Section title="leaderboard-row">
           <Row label="score levels">
             <div className="flex w-full max-w-2xl flex-col border border-[#2A2A2A]">
-              <LeaderboardRow
-                rank={1}
-                score={1.2}
-                codePreview="function authenticate(user, pass) { if (user == 'admin' && pass == 'admin') {"
-                lang="javascript"
-              />
-              <LeaderboardRow
-                rank={2}
-                score={5.5}
-                codePreview="export async function fetchData(url) { const res = await fetch(url); return res.json()"
-                lang="typescript"
-              />
-              <LeaderboardRow
-                rank={3}
-                score={8.9}
-                codePreview="const sum = (a: number, b: number): number => a + b"
-                lang="typescript"
-              />
+              <LeaderboardRow.Root>
+                <LeaderboardRow.Rank rank={1} />
+                <LeaderboardRow.Score score={1.2} />
+                <LeaderboardRow.CodePreview>
+                  {"function authenticate(user, pass) { if (user == 'admin' && pass == 'admin') {"}
+                </LeaderboardRow.CodePreview>
+                <LeaderboardRow.Lang>javascript</LeaderboardRow.Lang>
+              </LeaderboardRow.Root>
+              <LeaderboardRow.Root>
+                <LeaderboardRow.Rank rank={2} />
+                <LeaderboardRow.Score score={5.5} />
+                <LeaderboardRow.CodePreview>
+                  {
+                    'export async function fetchData(url) { const res = await fetch(url); return res.json()'
+                  }
+                </LeaderboardRow.CodePreview>
+                <LeaderboardRow.Lang>typescript</LeaderboardRow.Lang>
+              </LeaderboardRow.Root>
+              <LeaderboardRow.Root>
+                <LeaderboardRow.Rank rank={3} />
+                <LeaderboardRow.Score score={8.9} />
+                <LeaderboardRow.CodePreview>
+                  {'const sum = (a: number, b: number): number => a + b'}
+                </LeaderboardRow.CodePreview>
+                <LeaderboardRow.Lang>typescript</LeaderboardRow.Lang>
+              </LeaderboardRow.Root>
             </div>
           </Row>
         </Section>

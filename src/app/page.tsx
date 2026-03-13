@@ -150,13 +150,12 @@ export default function HomePage() {
             </div>
 
             {PREVIEW_ENTRIES.map((entry) => (
-              <LeaderboardRow
-                key={entry.rank}
-                rank={entry.rank}
-                score={entry.score}
-                codePreview={entry.codePreview}
-                lang={entry.lang}
-              />
+              <LeaderboardRow.Root key={entry.rank}>
+                <LeaderboardRow.Rank rank={entry.rank} />
+                <LeaderboardRow.Score score={entry.score} />
+                <LeaderboardRow.CodePreview>{entry.codePreview}</LeaderboardRow.CodePreview>
+                <LeaderboardRow.Lang>{entry.lang}</LeaderboardRow.Lang>
+              </LeaderboardRow.Root>
             ))}
           </div>
 
