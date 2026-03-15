@@ -8,16 +8,29 @@
     "start": "next start",
     "lint": "biome lint ./src",
     "format": "biome format ./src --write",
-    "check": "biome check ./src"
+    "check": "biome check ./src",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.41",
     "@base-ui-components/react": "1.0.0-rc.0",
+    "ai": "^6.0.116",
+    "drizzle-orm": "^0.45.1",
+    "highlight.js": "^11.11.1",
     "next": "16.1.6",
+    "postgres": "^3.4.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "shiki": "^4.0.2",
     "tailwind-merge": "^3.5.0",
-    "tailwind-variants": "^3.2.2"
+    "tailwind-variants": "^3.2.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
@@ -25,6 +38,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.3.1",
+    "drizzle-kit": "^0.31.9",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
