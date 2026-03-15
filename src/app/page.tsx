@@ -1,47 +1,49 @@
+import { asc, avg, count } from 'drizzle-orm'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { LeaderboardRow } from '@/components/ui/leaderboard-row'
-import { Toggle } from '@/components/ui/toggle'
+import { db } from '@/db'
+import { roasts } from '@/db/schema'
+import { RoastForm } from './_components/roast-form'
 
-const SAMPLE_CODE = `function calculateTotal(items) {
-  let total = 0;
-  for (let i = 0; i < items.length; i++) {
-    total = total + items[i].price;
+export const dynamic = 'force-dynamic'
+
+async function getStats() {
+  const [row] = await db.select({ total: count(), avgScore: avg(roasts.score) }).from(roasts)
+  return {
+    total: row?.total ?? 0,
+    avgScore: row?.avgScore ? Number(row.avgScore).toFixed(1) : null
   }
+}
 
-  if (total > 100) {
-    console.log("discount applied");
-    total = total * 0.9;
-  }
+async function getPreviewEntries() {
+  const rows = await db
+    .select({
+      id: roasts.id,
+      score: roasts.score,
+      code: roasts.code,
+      lang: roasts.lang
+    })
+    .from(roasts)
+    .orderBy(asc(roasts.score))
+    .limit(3)
+  return rows.map((r, i) => ({
+    rank: i + 1,
+    score: Number(r.score),
+    codePreview: r.code.slice(0, 120),
+    lang: r.lang
+  }))
+}
 
-  // TODO: handle tax calculation
-  // TODO: handle currency conversion
-  return total;
-}`
+export default async function HomePage() {
+  const [stats, previewEntries] = await Promise.all([getStats(), getPreviewEntries()])
 
-const PREVIEW_ENTRIES = [
-  {
-    rank: 1,
-    score: 1.2,
-    codePreview: "eval(prompt('Enter code:'));\ndataset.with.malware;\n// trust the user bro",
-    lang: 'javascript'
-  },
-  {
-    rank: 2,
-    score: 1.8,
-    codePreview:
-      'if (a == true) { return true; }\nelse if (a == false) { return false; }\nelse { return false; }',
-    lang: 'typescript'
-  },
-  {
-    rank: 3,
-    score: 2.1,
-    codePreview: '$obj2r = $obj5 * @NUMS $6&1\n// TODO: add authentication',
-    lang: 'sql'
-  }
-]
+  const footerTotal =
+    stats.total > 0
+      ? `${stats.total.toLocaleString()} codes roasted`
+      : 'be the first to get roasted'
+  const footerAvg = stats.avgScore ? `avg score: ${stats.avgScore}/10` : null
 
-export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
       {/* Main Content */}
@@ -61,60 +63,18 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Code Editor */}
-        <div className="mx-auto flex w-full max-w-[780px] flex-col">
-          {/* Code input box */}
-          <div className="flex flex-col border border-[#2A2A2A] bg-[#111111]">
-            {/* Window header */}
-            <div className="flex h-10 items-center gap-3 border-[#2A2A2A] border-b px-4">
-              <span className="size-[10px] rounded-full bg-red-500" />
-              <span className="size-[10px] rounded-full bg-amber-500" />
-              <span className="size-[10px] rounded-full bg-emerald-500" />
-            </div>
-
-            {/* Textarea */}
-            <div className="flex" style={{ height: 360 }}>
-              {/* Line numbers */}
-              <div className="flex flex-col gap-0 border-[#2A2A2A] border-r bg-[#0F0F0F] px-3 py-3">
-                {SAMPLE_CODE.split('\n').map((_, i) => (
-                  <span
-                    key={i}
-                    className="min-w-[20px] text-right font-mono text-xs text-zinc-600 leading-5"
-                  >
-                    {i + 1}
-                  </span>
-                ))}
-              </div>
-
-              {/* Code area */}
-              <textarea
-                className="flex-1 resize-none bg-transparent px-4 py-3 font-mono text-xs text-zinc-300 leading-5 outline-none placeholder:text-zinc-600"
-                defaultValue={SAMPLE_CODE}
-                spellCheck={false}
-                aria-label="Paste your code here"
-              />
-            </div>
-          </div>
-
-          {/* Actions bar */}
-          <div className="mt-3 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Toggle defaultChecked={true} label="roast code" />
-              <span className="font-mono text-xs text-zinc-600">
-                {'// maximum villainy enabled'}
-              </span>
-            </div>
-            <Button variant="primary" size="md">
-              $ roast my code
-            </Button>
-          </div>
-        </div>
+        {/* Code Editor (client interactive) */}
+        <RoastForm />
 
         {/* Footer hint */}
         <div className="flex items-center justify-center gap-6 py-2">
-          <span className="font-mono text-xs text-zinc-600">2,847 codes roasted</span>
-          <span className="font-mono text-xs text-zinc-600">·</span>
-          <span className="font-mono text-xs text-zinc-600">avg score: 4.2/10</span>
+          <span className="font-mono text-xs text-zinc-600">{footerTotal}</span>
+          {footerAvg && (
+            <>
+              <span className="font-mono text-xs text-zinc-600">·</span>
+              <span className="font-mono text-xs text-zinc-600">{footerAvg}</span>
+            </>
+          )}
         </div>
 
         {/* Spacer */}
@@ -149,20 +109,28 @@ export default function HomePage() {
               <span className="w-24 shrink-0 text-right font-mono text-xs text-zinc-600">lang</span>
             </div>
 
-            {PREVIEW_ENTRIES.map((entry) => (
-              <LeaderboardRow.Root key={entry.rank}>
-                <LeaderboardRow.Rank rank={entry.rank} />
-                <LeaderboardRow.Score score={entry.score} />
-                <LeaderboardRow.CodePreview>{entry.codePreview}</LeaderboardRow.CodePreview>
-                <LeaderboardRow.Lang>{entry.lang}</LeaderboardRow.Lang>
-              </LeaderboardRow.Root>
-            ))}
+            {previewEntries.length === 0 ? (
+              <div className="px-5 py-8 text-center font-mono text-xs text-zinc-600">
+                {'// no roasts yet — be the first'}
+              </div>
+            ) : (
+              previewEntries.map((entry) => (
+                <LeaderboardRow.Root key={entry.rank}>
+                  <LeaderboardRow.Rank rank={entry.rank} />
+                  <LeaderboardRow.Score score={entry.score} />
+                  <LeaderboardRow.CodePreview>{entry.codePreview}</LeaderboardRow.CodePreview>
+                  <LeaderboardRow.Lang>{entry.lang}</LeaderboardRow.Lang>
+                </LeaderboardRow.Root>
+              ))
+            )}
           </div>
 
           {/* Fade hint */}
           <div className="flex items-center justify-center py-2">
             <span className="font-mono text-xs text-zinc-600">
-              {'// showing 3 of 2,847 · visit full leaderboard ↓'}
+              {previewEntries.length > 0
+                ? `// showing ${previewEntries.length} of ${stats.total.toLocaleString()} · visit full leaderboard ↓`
+                : '// submit your code above to get started ↑'}
             </span>
           </div>
         </div>

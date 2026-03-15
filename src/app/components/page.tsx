@@ -6,6 +6,7 @@ import { DiffLine } from '@/components/ui/diff-line'
 import { LeaderboardRow } from '@/components/ui/leaderboard-row'
 import { ScoreRing } from '@/components/ui/score-ring'
 import { Toggle } from '@/components/ui/toggle'
+import { CodeEditorShowcase } from './code-editor-showcase'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -92,6 +93,15 @@ export default function ComponentsPage() {
           <Row label="no label">
             <Toggle checked={false} />
             <Toggle checked={true} />
+          </Row>
+        </Section>
+
+        {/* Code Editor */}
+        <Section title="code-editor">
+          <Row label="default (auto-detect language)">
+            <div className="w-full max-w-2xl">
+              <CodeEditorShowcase />
+            </div>
           </Row>
         </Section>
 

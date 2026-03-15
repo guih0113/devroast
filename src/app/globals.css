@@ -39,3 +39,26 @@
   user-select: none;
   flex-shrink: 0;
 }
+
+/* ─── CodeEditor / Shiki highlight overlay ───────────────────────────── */
+.code-editor-highlight pre {
+  background: transparent !important;
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.code-editor-highlight code {
+  display: block;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem; /* text-xs */
+  line-height: 1.25rem; /* leading-5 */
+  white-space: pre;
+  tab-size: 2;
+}
+
+.code-editor-highlight .line {
+  display: block;
+  min-height: 1.25rem; /* leading-5 — keeps blank lines from collapsing */
+}
