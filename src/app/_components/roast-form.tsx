@@ -47,7 +47,7 @@ export function RoastForm() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[780px] flex-col">
+    <div className="mx-auto flex w-full max-w-3xl flex-col">
       <CodeEditor.Root defaultValue={SAMPLE_CODE} onChange={setCode}>
         <CodeEditor.WindowHeader />
         <CodeEditor.EditorBody>
@@ -59,7 +59,6 @@ export function RoastForm() {
         </CodeEditor.EditorBody>
       </CodeEditor.Root>
 
-      {/* Actions bar */}
       <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Toggle

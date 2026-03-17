@@ -3,7 +3,7 @@ import { tv } from 'tailwind-variants'
 
 const styles = tv({
   slots: {
-    root: 'flex items-center gap-6 border-b border-[#2A2A2A] px-5 py-4',
+    root: 'flex items-center gap-6 border-b border-zinc-800 px-5 py-4',
     rank: 'w-10 shrink-0 font-mono text-sm text-zinc-500',
     codePreview: 'flex-1 truncate font-mono text-xs text-zinc-500',
     lang: 'w-24 shrink-0 text-right font-mono text-xs text-zinc-600'

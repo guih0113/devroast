@@ -45,10 +45,8 @@ export default async function HomePage() {
   const footerAvg = stats.avgScore ? `avg score: ${stats.avgScore}/10` : null
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
-      {/* Main Content */}
+    <div className="min-h-screen bg-zinc-950">
       <main className="flex flex-col gap-8 px-10 pt-20">
-        {/* Hero */}
         <div className="flex flex-col items-center gap-3">
           <div className="flex flex-col items-center gap-3">
             <div className="flex items-center gap-3">
@@ -63,10 +61,8 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* Code Editor (client interactive) */}
         <RoastForm />
 
-        {/* Footer hint */}
         <div className="flex items-center justify-center gap-6 py-2">
           <span className="font-mono text-xs text-zinc-600">{footerTotal}</span>
           {footerAvg && (
@@ -77,12 +73,9 @@ export default async function HomePage() {
           )}
         </div>
 
-        {/* Spacer */}
         <div className="h-8" />
 
-        {/* Leaderboard Preview */}
-        <div className="mx-auto flex w-full max-w-[960px] flex-col gap-6">
-          {/* Title row */}
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="font-bold font-mono text-emerald-500 text-sm">{'// '}</span>
@@ -99,10 +92,8 @@ export default async function HomePage() {
             {'// the worst code on the internet, ranked by shame'}
           </p>
 
-          {/* Table */}
-          <div className="flex flex-col border border-[#2A2A2A]">
-            {/* Header */}
-            <div className="flex items-center gap-6 border-[#2A2A2A] border-b px-5 py-3">
+          <div className="flex flex-col border border-zinc-800">
+            <div className="flex items-center gap-6 border-zinc-800 border-b px-5 py-3">
               <span className="w-10 shrink-0 font-mono text-xs text-zinc-600">#</span>
               <span className="w-14 shrink-0 font-mono text-xs text-zinc-600">score</span>
               <span className="flex-1 font-mono text-xs text-zinc-600">code</span>
@@ -125,7 +116,6 @@ export default async function HomePage() {
             )}
           </div>
 
-          {/* Fade hint */}
           <div className="flex items-center justify-center py-2">
             <span className="font-mono text-xs text-zinc-600">
               {previewEntries.length > 0

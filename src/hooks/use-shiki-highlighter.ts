@@ -4,26 +4,18 @@ import type { HighlighterCore } from 'shiki/core'
 import { createHighlighterCore } from 'shiki/core'
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
 
-// ---------------------------------------------------------------------------
-// Module-level singleton — one Shiki instance shared across all editor mounts
-// ---------------------------------------------------------------------------
-
 let highlighterPromise: Promise<HighlighterCore> | null = null
 
 function getHighlighter(): Promise<HighlighterCore> {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighterCore({
       themes: [import('shiki/themes/github-dark.mjs')],
-      langs: [], // loaded lazily per language
+      langs: [],
       engine: createJavaScriptRegexEngine()
     })
   }
   return highlighterPromise
 }
-
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
 
 type UseShikiHighlighterReturn = {
   highlighterRef: React.RefObject<HighlighterCore | null>
@@ -67,10 +59,8 @@ export function useShikiHighlighter(): UseShikiHighlighterReturn {
           lang: lang === 'plaintext' ? 'text' : lang,
           theme: 'github-dark'
         })
-        // Strip Shiki's injected inline background so our dark surface shows through
         return raw.replace(/ style="[^"]*"/, '')
       } catch {
-        // Hard fallback: escape and render as plain text
         return `<pre><code>${code
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')

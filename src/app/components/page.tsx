@@ -36,9 +36,8 @@ const SAMPLE_CODE = `function roast(code) {
 
 export default function ComponentsPage() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A] px-20 py-16">
+    <div className="min-h-screen bg-zinc-950 px-20 py-16">
       <div className="flex max-w-4xl flex-col gap-16">
-        {/* Header */}
         <div className="flex flex-col gap-2">
           <h1 className="font-bold font-mono text-2xl text-zinc-100">component_library</h1>
           <p className="font-sans text-sm text-zinc-500">
@@ -46,7 +45,6 @@ export default function ComponentsPage() {
           </p>
         </div>
 
-        {/* Button */}
         <Section title="button">
           <Row label="variant">
             <Button variant="primary">$ primary</Button>
@@ -75,7 +73,6 @@ export default function ComponentsPage() {
           </Row>
         </Section>
 
-        {/* Badge */}
         <Section title="badge">
           <Row label="variant">
             <Badge variant="critical" label="critical" />
@@ -84,7 +81,6 @@ export default function ComponentsPage() {
           </Row>
         </Section>
 
-        {/* Toggle */}
         <Section title="toggle">
           <Row label="checked">
             <Toggle checked={false} label="off state" />
@@ -96,7 +92,6 @@ export default function ComponentsPage() {
           </Row>
         </Section>
 
-        {/* Code Editor */}
         <Section title="code-editor">
           <Row label="default (auto-detect language)">
             <div className="w-full max-w-2xl">
@@ -105,7 +100,6 @@ export default function ComponentsPage() {
           </Row>
         </Section>
 
-        {/* Analysis Card */}
         <Section title="analysis-card">
           <Row label="severity">
             <AnalysisCard.Root>
@@ -135,7 +129,6 @@ export default function ComponentsPage() {
           </Row>
         </Section>
 
-        {/* Code Block */}
         <Section title="code-block">
           <Row label="with filename">
             <CodeBlock
@@ -150,10 +143,9 @@ export default function ComponentsPage() {
           </Row>
         </Section>
 
-        {/* Diff Line */}
         <Section title="diff-line">
           <Row label="variant">
-            <div className="flex w-full max-w-lg flex-col border border-[#2A2A2A]">
+            <div className="flex w-full max-w-lg flex-col border border-zinc-800">
               <DiffLine variant="removed" code="const result = doThing(x, y, z)" />
               <DiffLine variant="added" code="const result = doThing(x)" />
               <DiffLine variant="context" code="return result" />
@@ -161,10 +153,9 @@ export default function ComponentsPage() {
           </Row>
         </Section>
 
-        {/* Leaderboard Row */}
         <Section title="leaderboard-row">
           <Row label="score levels">
-            <div className="flex w-full max-w-2xl flex-col border border-[#2A2A2A]">
+            <div className="flex w-full max-w-2xl flex-col border border-zinc-800">
               <LeaderboardRow.Root>
                 <LeaderboardRow.Rank rank={1} />
                 <LeaderboardRow.Score score={1.2} />
@@ -195,7 +186,6 @@ export default function ComponentsPage() {
           </Row>
         </Section>
 
-        {/* Score Ring */}
         <Section title="score-ring">
           <Row label="scores">
             <ScoreRing score={2.3} />

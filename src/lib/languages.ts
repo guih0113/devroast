@@ -1,9 +1,5 @@
 import type { BundledLanguage } from 'shiki'
 
-// ---------------------------------------------------------------------------
-// Supported languages shown in the editor picker
-// ---------------------------------------------------------------------------
-
 export const SUPPORTED_LANGUAGES: BundledLanguage[] = [
   'javascript',
   'typescript',
@@ -29,10 +25,6 @@ export const SUPPORTED_LANGUAGES: BundledLanguage[] = [
   'sql',
   'markdown'
 ]
-
-// ---------------------------------------------------------------------------
-// Human-readable labels for the picker
-// ---------------------------------------------------------------------------
 
 export const LANGUAGE_LABELS: Record<string, string> = {
   javascript: 'JavaScript',
@@ -61,37 +53,24 @@ export const LANGUAGE_LABELS: Record<string, string> = {
   plaintext: 'Plain Text'
 }
 
-// ---------------------------------------------------------------------------
-// highlight.js language ID → Shiki BundledLanguage mapping
-// Only includes IDs that differ between the two libraries.
-// IDs that are identical (e.g. 'javascript', 'typescript') are handled by
-// the identity fallback in use-language-detection.ts.
-// ---------------------------------------------------------------------------
-
 export const HLJS_TO_SHIKI: Record<string, BundledLanguage> = {
-  // shell / bash
   shell: 'shellscript',
   bash: 'shellscript',
   sh: 'shellscript',
   zsh: 'shellscript',
 
-  // C-family
   'c++': 'cpp',
   'c#': 'csharp',
   cs: 'csharp',
 
-  // web
   xml: 'html',
   xhtml: 'html',
 
-  // data
   yml: 'yaml',
 
-  // JS variants
   mjs: 'javascript',
   cjs: 'javascript',
 
-  // misc
-  'objective-c': 'swift', // closest visual match in our set
-  perl: 'ruby' // closest visual match in our set
+  'objective-c': 'swift',
+  perl: 'ruby'
 }

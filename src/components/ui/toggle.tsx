@@ -8,15 +8,15 @@ const switchVariants = tv({
   slots: {
     root: 'group inline-flex cursor-pointer select-none items-center gap-3',
     track: [
-      'relative flex h-[22px] w-10 items-center rounded-full p-[3px]',
+      'relative flex h-5.5 w-10 items-center rounded-full p-0.5',
       'transition-colors duration-150',
       'group-data-[checked]:bg-emerald-500 group-data-[checked]:justify-end',
-      'group-data-[unchecked]:bg-[#2A2A2A] group-data-[unchecked]:justify-start'
+      'group-data-[unchecked]:bg-zinc-800 group-data-[unchecked]:justify-start'
     ],
     thumb: [
       'block size-4 rounded-full',
       'transition-all duration-150',
-      'data-[checked]:bg-[#0A0A0A]',
+      'data-[checked]:bg-zinc-950',
       'data-[unchecked]:bg-zinc-500'
     ],
     label: [

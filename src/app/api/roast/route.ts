@@ -1,12 +1,10 @@
+import { createHash } from 'node:crypto'
 import { openai } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
-import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/db'
 import { analysisItems, roasts } from '@/db/schema'
-
-// -- AI response schema ------------------------------------------------------
 
 const RoastSchema = z.object({
   score: z.number().min(0).max(10),
@@ -34,8 +32,6 @@ const RoastSchema = z.object({
     .min(1)
 })
 
-// -- System prompt -----------------------------------------------------------
-
 const SYSTEM_PROMPT = `
 You are a brutally honest senior software engineer doing a code review.
 You never sugarcoat. You find every problem.
@@ -52,8 +48,6 @@ Given a code snippet, return a JSON object with:
 Be accurate. Be mean if roastMode is true. Always include at least one "good" card if the code has anything right at all.
 `.trim()
 
-// -- Route handler -----------------------------------------------------------
-
 export async function POST(req: NextRequest) {
   const { code, lang, roastMode } = await req.json()
 
@@ -61,7 +55,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'code is required' }, { status: 400 })
   }
 
-  // 1. Call the AI
   const { object } = await generateObject({
     model: openai('gpt-4o-mini'),
     schema: RoastSchema,
@@ -69,10 +62,8 @@ export async function POST(req: NextRequest) {
     prompt: `roastMode: ${Boolean(roastMode)}\nlang: ${lang ?? 'unknown'}\n\n\`\`\`${lang ?? ''}\n${code}\n\`\`\``
   })
 
-  // 2. Compute code hash
   const codeHash = createHash('sha256').update(code.trim()).digest('hex')
 
-  // 3. Persist everything in one transaction
   const [roast] = await db.transaction(async (tx) => {
     const [r] = await tx
       .insert(roasts)
@@ -103,6 +94,5 @@ export async function POST(req: NextRequest) {
     return [r]
   })
 
-  // 4. Return the new id — client redirects to /results?id=<uuid>
   return NextResponse.json({ id: roast.id })
 }

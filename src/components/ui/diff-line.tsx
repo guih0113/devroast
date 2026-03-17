@@ -10,12 +10,12 @@ const diffLine = tv({
   variants: {
     variant: {
       added: {
-        root: 'bg-[#0A1A0F]',
+        root: 'bg-emerald-950',
         prefix: 'text-emerald-500',
         code: 'text-zinc-100'
       },
       removed: {
-        root: 'bg-[#1A0A0A]',
+        root: 'bg-red-950',
         prefix: 'text-red-500',
         code: 'text-zinc-500'
       },

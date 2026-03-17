@@ -9,10 +9,8 @@ import { db } from '@/db'
 import { roasts } from '@/db/schema'
 
 async function getLeaderboardData() {
-  // Aggregate stats
   const [stats] = await db.select({ total: count(), avgScore: avg(roasts.score) }).from(roasts)
 
-  // Top 50 worst scores, with a roast count (how many times same codeHash was submitted)
   const rows = await db
     .select({
       id: roasts.id,
@@ -39,10 +37,9 @@ export default async function LeaderboardPage() {
   const avgScore = stats?.avgScore ? Number(stats.avgScore).toFixed(1) : null
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-zinc-950">
       <main className="flex flex-col gap-8 px-10 pt-16 pb-20">
-        {/* Header */}
-        <div className="mx-auto flex w-full max-w-[960px] flex-col gap-4">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
           <div className="flex items-center gap-3">
             <span className="font-bold font-mono text-emerald-500 text-sm">{'// '}</span>
             <h1 className="font-bold font-mono text-sm text-zinc-100">shame_leaderboard</h1>
@@ -51,7 +48,6 @@ export default async function LeaderboardPage() {
             {'// the worst code on the internet, ranked by shame'}
           </p>
 
-          {/* Aggregate stats */}
           <div className="flex items-center gap-6 pt-1">
             <span className="font-mono text-xs text-zinc-600">
               {totalRoasts.toLocaleString()} total roasts
@@ -65,11 +61,9 @@ export default async function LeaderboardPage() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="mx-auto flex w-full max-w-[960px] flex-col">
-          <div className="flex flex-col border border-[#2A2A2A]">
-            {/* Header */}
-            <div className="flex items-center gap-6 border-[#2A2A2A] border-b px-5 py-3">
+        <div className="mx-auto flex w-full max-w-4xl flex-col">
+          <div className="flex flex-col border border-zinc-800">
+            <div className="flex items-center gap-6 border-zinc-800 border-b px-5 py-3">
               <span className="w-10 shrink-0 font-mono text-xs text-zinc-600">#</span>
               <span className="w-14 shrink-0 font-mono text-xs text-zinc-600">score</span>
               <span className="flex-1 font-mono text-xs text-zinc-600">code</span>
@@ -86,7 +80,7 @@ export default async function LeaderboardPage() {
             ) : (
               rows.map((entry, idx) => (
                 <Link key={entry.id} href={`/results?id=${entry.id}`} className="group">
-                  <div className="flex items-center gap-6 border-[#2A2A2A] border-b px-5 py-4 transition-colors group-hover:bg-[#141414]">
+                  <div className="flex items-center gap-6 border-zinc-800 border-b px-5 py-4 transition-colors group-hover:bg-zinc-900">
                     <LeaderboardRow.Rank rank={idx + 1} />
                     <LeaderboardRow.Score score={Number(entry.score)} />
                     <LeaderboardRow.CodePreview>
@@ -103,8 +97,7 @@ export default async function LeaderboardPage() {
           </div>
         </div>
 
-        {/* Back button */}
-        <div className="mx-auto flex w-full max-w-[960px] justify-center pt-4">
+        <div className="mx-auto flex w-full max-w-4xl justify-center pt-4">
           <Link href="/">
             <Button variant="ghost" size="sm">
               ← back to roaster

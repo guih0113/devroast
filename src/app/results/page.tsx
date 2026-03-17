@@ -42,22 +42,18 @@ export default async function ResultsPage({ searchParams }: Props) {
   const verdict = getVerdict(score)
   const diff = roast.diff ?? []
 
-  // Pair analysis items into rows of 2
   const itemRows: (typeof items)[] = []
   for (let i = 0; i < items.length; i += 2) {
     itemRows.push(items.slice(i, i + 2))
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
-      {/* Results Content */}
+    <div className="min-h-screen bg-zinc-950">
       <main className="flex flex-col gap-10 px-20 py-10">
-        {/* Score Hero */}
         <div className="flex items-center gap-12">
           <ScoreRing score={score} />
 
           <div className="flex flex-col gap-4">
-            {/* Breadcrumb */}
             <div className="flex items-center gap-2 font-mono text-xs text-zinc-600">
               <Link href="/" className="transition-colors hover:text-zinc-400">
                 {'#'} devroast
@@ -68,15 +64,12 @@ export default async function ResultsPage({ searchParams }: Props) {
               <span>{roast.fileName ?? 'submission'}</span>
             </div>
 
-            {/* Verdict */}
             <div className="font-mono text-xs text-zinc-500">{verdict.label}</div>
 
-            {/* Roast quote */}
             <blockquote className="max-w-xl font-bold font-mono text-xl text-zinc-100 leading-snug">
               &ldquo;{roast.roastQuote}&rdquo;
             </blockquote>
 
-            {/* Meta */}
             <div className="flex items-center gap-4 font-mono text-xs text-zinc-600">
               <span>
                 {'>'} {roast.issuesFound} issues found
@@ -91,10 +84,8 @@ export default async function ResultsPage({ searchParams }: Props) {
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="h-px bg-[#2A2A2A]" />
+        <div className="h-px bg-zinc-800" />
 
-        {/* Submitted Code Section */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <span className="font-bold font-mono text-emerald-500 text-sm">{'// '}</span>
@@ -107,10 +98,8 @@ export default async function ResultsPage({ searchParams }: Props) {
           />
         </div>
 
-        {/* Divider */}
-        <div className="h-px bg-[#2A2A2A]" />
+        <div className="h-px bg-zinc-800" />
 
-        {/* Detailed Analysis Section */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-2">
             <span className="font-bold font-mono text-emerald-500 text-sm">{'// '}</span>
@@ -132,10 +121,8 @@ export default async function ResultsPage({ searchParams }: Props) {
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="h-px bg-[#2A2A2A]" />
+        <div className="h-px bg-zinc-800" />
 
-        {/* Suggested Fix / Diff Section */}
         {diff.length > 0 && (
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-2">
@@ -143,7 +130,7 @@ export default async function ResultsPage({ searchParams }: Props) {
               <span className="font-bold font-mono text-sm text-zinc-100">suggested_fix</span>
             </div>
 
-            <div className="flex flex-col border border-[#2A2A2A] bg-[#111111]">
+            <div className="flex flex-col border border-zinc-800 bg-zinc-900">
               {diff.map((line, i) => (
                 <DiffLine key={i} variant={line.variant} code={line.code} />
               ))}

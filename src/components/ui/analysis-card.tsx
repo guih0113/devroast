@@ -3,7 +3,7 @@ import { tv } from 'tailwind-variants'
 import { Badge } from './badge'
 
 const analysisCard = tv({
-  base: 'flex flex-col gap-3 border border-[#2A2A2A] p-5'
+  base: 'flex flex-col gap-3 border border-zinc-800 p-5'
 })
 
 type Severity = 'critical' | 'warning' | 'good'

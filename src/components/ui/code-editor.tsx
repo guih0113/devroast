@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState
 } from 'react'
@@ -13,10 +14,6 @@ import type { BundledLanguage } from 'shiki'
 import { detectLanguage } from '@/hooks/use-language-detection'
 import { useShikiHighlighter } from '@/hooks/use-shiki-highlighter'
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '@/lib/languages'
-
-// ---------------------------------------------------------------------------
-// Internal hook
-// ---------------------------------------------------------------------------
 
 type UseCodeEditorOptions = {
   defaultValue?: string
@@ -37,14 +34,11 @@ function useCodeEditor({ defaultValue = '', onChange, onLanguageChange }: UseCod
 
   const { highlighterReady, highlight, scheduleHighlight } = useShikiHighlighter()
 
-  // Boot: once Shiki is ready, run initial detection + highlight
   useEffect(() => {
     if (!highlighterReady) return
     const detected = detectLanguage(code)
     setLanguage(detected)
     highlight(code, detected).then(setHighlightedHtml)
-    // intentionally runs only when highlighterReady flips to true
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlighterReady])
 
   const handleCodeChange = useCallback(
@@ -76,7 +70,6 @@ function useCodeEditor({ defaultValue = '', onChange, onLanguageChange }: UseCod
     [code, onLanguageChange, scheduleHighlight]
   )
 
-  // Sync highlight layer + line numbers scroll to textarea
   const syncScroll = useCallback(() => {
     const ta = textareaRef.current
     if (!ta) return
@@ -89,7 +82,6 @@ function useCodeEditor({ defaultValue = '', onChange, onLanguageChange }: UseCod
     }
   }, [])
 
-  // Keyboard shortcuts: Tab / Shift+Tab / Enter / }
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       const ta = textareaRef.current
@@ -100,7 +92,6 @@ function useCodeEditor({ defaultValue = '', onChange, onLanguageChange }: UseCod
       if (e.key === 'Tab') {
         e.preventDefault()
         if (e.shiftKey) {
-          // Dedent: remove up to 2 leading spaces on the current line
           const lineStart = value.lastIndexOf('\n', ss - 1) + 1
           const match = value.slice(lineStart).match(/^( {1,2})/)
           if (match) {
@@ -111,7 +102,6 @@ function useCodeEditor({ defaultValue = '', onChange, onLanguageChange }: UseCod
             handleCodeChange(next)
           }
         } else {
-          // Indent: insert 2 spaces at cursor
           const next = `${value.slice(0, ss)}  ${value.slice(se)}`
           ta.value = next
           ta.selectionStart = ta.selectionEnd = ss + 2
@@ -169,10 +159,6 @@ function useCodeEditor({ defaultValue = '', onChange, onLanguageChange }: UseCod
   }
 }
 
-// ---------------------------------------------------------------------------
-// Context — shares hook state across the namespace sub-components
-// ---------------------------------------------------------------------------
-
 type CodeEditorContextValue = ReturnType<typeof useCodeEditor>
 
 const CodeEditorContext = createContext<CodeEditorContextValue | null>(null)
@@ -182,10 +168,6 @@ function useCodeEditorContext() {
   if (!ctx) throw new Error('CodeEditor sub-components must be used inside <CodeEditor.Root>')
   return ctx
 }
-
-// ---------------------------------------------------------------------------
-// Root
-// ---------------------------------------------------------------------------
 
 type RootProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   defaultValue?: string
@@ -206,7 +188,7 @@ function Root({
   return (
     <CodeEditorContext.Provider value={state}>
       <div
-        className={`flex flex-col border border-[#2A2A2A] bg-[#111111]${className ? ` ${className}` : ''}`}
+        className={`flex flex-col border border-zinc-800 bg-zinc-900${className ? ` ${className}` : ''}`}
         {...props}
       >
         {children}
@@ -215,40 +197,34 @@ function Root({
   )
 }
 
-// ---------------------------------------------------------------------------
-// WindowHeader — macOS dots + language picker button
-// ---------------------------------------------------------------------------
-
 function WindowHeader() {
   const { language, isPickerOpen, setIsPickerOpen, handleLanguageSelect } = useCodeEditorContext()
   const label = LANGUAGE_LABELS[language] ?? language
 
   return (
-    <div className="relative flex h-10 shrink-0 items-center gap-3 border-[#2A2A2A] border-b px-4">
-      <span className="size-[10px] rounded-full bg-red-500" />
-      <span className="size-[10px] rounded-full bg-amber-500" />
-      <span className="size-[10px] rounded-full bg-emerald-500" />
+    <div className="relative flex h-10 shrink-0 items-center gap-3 border-zinc-800 border-b px-4">
+      <span className="size-2.5 rounded-full bg-red-500" />
+      <span className="size-2.5 rounded-full bg-amber-500" />
+      <span className="size-2.5 rounded-full bg-emerald-500" />
       <span className="flex-1" />
 
-      {/* Language picker trigger */}
       <button
         type="button"
         onClick={() => setIsPickerOpen((v) => !v)}
-        className="flex items-center gap-1 rounded px-2 py-0.5 font-mono text-xs text-zinc-400 transition-colors hover:bg-[#2A2A2A] hover:text-zinc-200"
+        className="flex items-center gap-1 rounded px-2 py-0.5 font-mono text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
       >
         {label}
-        <span className="text-[10px] text-zinc-600">▾</span>
+        <span className="text-xs text-zinc-600">▾</span>
       </button>
 
-      {/* Dropdown */}
       {isPickerOpen && (
-        <div className="absolute top-10 right-2 z-50 max-h-56 w-36 overflow-y-auto border border-[#2A2A2A] bg-[#0F0F0F] shadow-lg">
+        <div className="absolute top-10 right-2 z-50 max-h-56 w-36 overflow-y-auto border border-zinc-800 bg-zinc-950 shadow-lg">
           {SUPPORTED_LANGUAGES.map((lang) => (
             <button
               key={lang}
               type="button"
               onClick={() => handleLanguageSelect(lang)}
-              className={`flex w-full items-center px-3 py-1.5 font-mono text-xs transition-colors hover:bg-[#2A2A2A] hover:text-zinc-100 ${
+              className={`flex w-full items-center px-3 py-1.5 font-mono text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-100 ${
                 lang === language ? 'text-emerald-400' : 'text-zinc-400'
               }`}
             >
@@ -261,10 +237,6 @@ function WindowHeader() {
   )
 }
 
-// ---------------------------------------------------------------------------
-// EditorBody — fixed-height flex row; host for LineNumbers + content area
-// ---------------------------------------------------------------------------
-
 function EditorBody({ children }: { children?: React.ReactNode }) {
   return (
     <div className="flex overflow-hidden" style={{ height: 320 }}>
@@ -273,21 +245,17 @@ function EditorBody({ children }: { children?: React.ReactNode }) {
   )
 }
 
-// ---------------------------------------------------------------------------
-// LineNumbers — scrolls in sync with the textarea
-// ---------------------------------------------------------------------------
-
 function LineNumbers() {
   const { lineCount, lineNumbersRef } = useCodeEditorContext()
 
   return (
     <div
       ref={lineNumbersRef}
-      className="flex shrink-0 select-none flex-col overflow-hidden border-[#2A2A2A] border-r bg-[#0F0F0F] px-3 py-3"
+      className="flex shrink-0 select-none flex-col overflow-hidden border-zinc-800 border-r bg-zinc-950 px-3 py-3"
       aria-hidden="true"
     >
       {Array.from({ length: lineCount }, (_, i) => (
-        <span key={i} className="min-w-[20px] text-right font-mono text-xs text-zinc-600 leading-5">
+        <span key={i} className="min-w-5 text-right font-mono text-xs text-zinc-600 leading-5">
           {i + 1}
         </span>
       ))}
@@ -295,27 +263,23 @@ function LineNumbers() {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Highlight — Shiki HTML rendered behind the transparent textarea
-// ---------------------------------------------------------------------------
-
 function Highlight() {
   const { highlightedHtml, highlightRef } = useCodeEditorContext()
+
+  useLayoutEffect(() => {
+    if (highlightRef.current) {
+      highlightRef.current.innerHTML = highlightedHtml
+    }
+  }, [highlightedHtml, highlightRef])
 
   return (
     <div
       ref={highlightRef}
       className="code-editor-highlight pointer-events-none absolute inset-0 overflow-hidden px-4 py-3"
       aria-hidden="true"
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted shiki output
-      dangerouslySetInnerHTML={{ __html: highlightedHtml }}
     />
   )
 }
-
-// ---------------------------------------------------------------------------
-// Textarea — captures input; transparent so highlight shows through
-// ---------------------------------------------------------------------------
 
 function Textarea() {
   const { code, textareaRef, handleCodeChange, handleKeyDown, syncScroll } = useCodeEditorContext()
@@ -338,10 +302,6 @@ function Textarea() {
   )
 }
 
-// ---------------------------------------------------------------------------
-// LanguageSelect — standalone language picker (for use outside WindowHeader)
-// ---------------------------------------------------------------------------
-
 function LanguageSelect() {
   const { language, isPickerOpen, setIsPickerOpen, handleLanguageSelect } = useCodeEditorContext()
   const label = LANGUAGE_LABELS[language] ?? language
@@ -351,20 +311,20 @@ function LanguageSelect() {
       <button
         type="button"
         onClick={() => setIsPickerOpen((v) => !v)}
-        className="flex items-center gap-1 rounded px-2 py-0.5 font-mono text-xs text-zinc-400 transition-colors hover:bg-[#2A2A2A] hover:text-zinc-200"
+        className="flex items-center gap-1 rounded px-2 py-0.5 font-mono text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
       >
         {label}
-        <span className="text-[10px] text-zinc-600">▾</span>
+        <span className="text-xs text-zinc-600">▾</span>
       </button>
 
       {isPickerOpen && (
-        <div className="absolute top-full right-0 z-50 mt-1 max-h-56 w-36 overflow-y-auto border border-[#2A2A2A] bg-[#0F0F0F] shadow-lg">
+        <div className="absolute top-full right-0 z-50 mt-1 max-h-56 w-36 overflow-y-auto border border-zinc-800 bg-zinc-950 shadow-lg">
           {SUPPORTED_LANGUAGES.map((lang) => (
             <button
               key={lang}
               type="button"
               onClick={() => handleLanguageSelect(lang)}
-              className={`flex w-full items-center px-3 py-1.5 font-mono text-xs transition-colors hover:bg-[#2A2A2A] hover:text-zinc-100 ${
+              className={`flex w-full items-center px-3 py-1.5 font-mono text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-100 ${
                 lang === language ? 'text-emerald-400' : 'text-zinc-400'
               }`}
             >
@@ -376,10 +336,6 @@ function LanguageSelect() {
     </div>
   )
 }
-
-// ---------------------------------------------------------------------------
-// Namespace export
-// ---------------------------------------------------------------------------
 
 export const CodeEditor = {
   Root,

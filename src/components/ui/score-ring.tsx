@@ -13,7 +13,6 @@ type ScoreRingProps = {
 
 export function ScoreRing({ score, maxScore = 10, className }: ScoreRingProps) {
   const pct = Math.min(Math.max(score / maxScore, 0), 1)
-  // arc starts at top (−90° offset), draws clockwise
   const dashArray = CIRCUMFERENCE
   const dashOffset = CIRCUMFERENCE * (1 - pct)
 
@@ -36,7 +35,6 @@ export function ScoreRing({ score, maxScore = 10, className }: ScoreRingProps) {
           </linearGradient>
         </defs>
 
-        {/* Track */}
         <circle
           cx={SIZE / 2}
           cy={SIZE / 2}
@@ -46,7 +44,6 @@ export function ScoreRing({ score, maxScore = 10, className }: ScoreRingProps) {
           strokeWidth={STROKE}
         />
 
-        {/* Progress arc */}
         <circle
           cx={SIZE / 2}
           cy={SIZE / 2}
@@ -60,7 +57,6 @@ export function ScoreRing({ score, maxScore = 10, className }: ScoreRingProps) {
         />
       </svg>
 
-      {/* Score label */}
       <div className="relative flex flex-col items-center gap-0.5 leading-none">
         <span className="font-bold font-mono text-5xl text-zinc-100 leading-none">
           {score.toFixed(1)}

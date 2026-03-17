@@ -12,11 +12,7 @@ import {
   varchar
 } from 'drizzle-orm/pg-core'
 
-// -- Enums -------------------------------------------------------------------
-
 export const severityEnum = pgEnum('severity', ['critical', 'warning', 'good'])
-
-// -- Tables ------------------------------------------------------------------
 
 export const roasts = pgTable(
   'roasts',
@@ -54,8 +50,6 @@ export const analysisItems = pgTable('analysis_items', {
   description: text().notNull(),
   position: integer().notNull().default(0)
 })
-
-// -- Types -------------------------------------------------------------------
 
 export type Roast = typeof roasts.$inferSelect
 export type NewRoast = typeof roasts.$inferInsert
