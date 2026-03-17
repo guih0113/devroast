@@ -6,35 +6,42 @@ import { LeaderboardRow } from '@/components/ui/leaderboard-row'
 export const dynamic = 'force-dynamic'
 
 import { db } from '@/db'
+import { withDatabaseStatus } from '@/db/error-handler'
 import { roasts } from '@/db/schema'
 
 async function getLeaderboardData() {
-  const [stats] = await db.select({ total: count(), avgScore: avg(roasts.score) }).from(roasts)
+  return withDatabaseStatus(
+    async () => {
+      const [stats] = await db.select({ total: count(), avgScore: avg(roasts.score) }).from(roasts)
 
-  const rows = await db
-    .select({
-      id: roasts.id,
-      score: roasts.score,
-      code: roasts.code,
-      lang: roasts.lang,
-      fileName: roasts.fileName,
-      roastCount: sql<number>`(
+      const rows = await db
+        .select({
+          id: roasts.id,
+          score: roasts.score,
+          code: roasts.code,
+          lang: roasts.lang,
+          fileName: roasts.fileName,
+          roastCount: sql<number>`(
         select count(*)::int from roasts r2
         where r2.code_hash = ${roasts.codeHash}
       )`
-    })
-    .from(roasts)
-    .orderBy(asc(roasts.score))
-    .limit(50)
+        })
+        .from(roasts)
+        .orderBy(asc(roasts.score))
+        .limit(50)
 
-  return { stats, rows }
+      return { stats, rows }
+    },
+    { stats: { total: 0, avgScore: null }, rows: [] },
+    { log: false }
+  )
 }
 
 export default async function LeaderboardPage() {
-  const { stats, rows } = await getLeaderboardData()
+  const { data, dbOffline } = await getLeaderboardData()
 
-  const totalRoasts = stats?.total ?? 0
-  const avgScore = stats?.avgScore ? Number(stats.avgScore).toFixed(1) : null
+  const totalRoasts = data.stats?.total ?? 0
+  const avgScore = data.stats?.avgScore ? Number(data.stats.avgScore).toFixed(1) : null
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -49,7 +56,7 @@ export default async function LeaderboardPage() {
           </p>
 
           <div className="flex items-center gap-6 pt-1">
-            <span className="font-mono text-xs text-zinc-600">
+            <span className="font-mono text-xs text-zinc-600" suppressHydrationWarning>
               {totalRoasts.toLocaleString()} total roasts
             </span>
             {avgScore && (
@@ -73,12 +80,12 @@ export default async function LeaderboardPage() {
               <span className="w-24 shrink-0 text-right font-mono text-xs text-zinc-600">lang</span>
             </div>
 
-            {rows.length === 0 ? (
+            {data.rows.length === 0 ? (
               <div className="px-5 py-12 text-center font-mono text-xs text-zinc-600">
                 {'// no submissions yet — be the first to get roasted'}
               </div>
             ) : (
-              rows.map((entry, idx) => (
+              data.rows.map((entry, idx) => (
                 <Link key={entry.id} href={`/results?id=${entry.id}`} className="group">
                   <div className="flex items-center gap-6 border-zinc-800 border-b px-5 py-4 transition-colors group-hover:bg-zinc-900">
                     <LeaderboardRow.Rank rank={idx + 1} />
@@ -96,6 +103,14 @@ export default async function LeaderboardPage() {
             )}
           </div>
         </div>
+
+        {dbOffline && (
+          <div className="mx-auto flex w-full max-w-4xl justify-center pt-4">
+            <span className="rounded border border-amber-500/40 bg-amber-500/10 px-3 py-1 font-mono text-[11px] text-amber-300">
+              DB offline
+            </span>
+          </div>
+        )}
 
         <div className="mx-auto flex w-full max-w-4xl justify-center pt-4">
           <Link href="/">

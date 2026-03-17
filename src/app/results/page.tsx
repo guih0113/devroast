@@ -1,4 +1,5 @@
 import { asc, eq } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { BundledLanguage } from 'shiki'
@@ -7,6 +8,7 @@ import { CodeBlock } from '@/components/ui/code-block'
 import { DiffLine } from '@/components/ui/diff-line'
 import { ScoreRing } from '@/components/ui/score-ring'
 import { db } from '@/db'
+import { withDatabaseStatus } from '@/db/error-handler'
 import { analysisItems, roasts } from '@/db/schema'
 import { getVerdict } from '@/lib/score'
 
@@ -14,18 +16,54 @@ type Props = {
   searchParams: Promise<{ id?: string }>
 }
 
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const { id } = await searchParams
+  if (!id) return { title: 'devroast' }
+
+  const { data: roast } = await withDatabaseStatus(async () => {
+    const [row] = await db.select().from(roasts).where(eq(roasts.id, id)).limit(1)
+    return row ?? null
+  }, null)
+
+  if (!roast) return { title: 'devroast' }
+
+  const score = Number(roast.score)
+  const verdict = getVerdict(score)
+  const title = `${roast.fileName ?? 'submission'} — ${score.toFixed(1)}/10 (${verdict.label})`
+  const description = roast.roastQuote
+  const ogUrl = `/og?id=${id}`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [{ url: ogUrl, width: 1200, height: 630 }]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogUrl]
+    }
+  }
+}
+
 async function getResult(id: string) {
-  const [roast] = await db.select().from(roasts).where(eq(roasts.id, id)).limit(1)
+  return withDatabaseStatus(async () => {
+    const [roast] = await db.select().from(roasts).where(eq(roasts.id, id)).limit(1)
 
-  if (!roast) return null
+    if (!roast) return null
 
-  const items = await db
-    .select()
-    .from(analysisItems)
-    .where(eq(analysisItems.roastId, id))
-    .orderBy(asc(analysisItems.position))
+    const items = await db
+      .select()
+      .from(analysisItems)
+      .where(eq(analysisItems.roastId, id))
+      .orderBy(asc(analysisItems.position))
 
-  return { roast, items }
+    return { roast, items }
+  }, null)
 }
 
 export default async function ResultsPage({ searchParams }: Props) {
@@ -33,7 +71,7 @@ export default async function ResultsPage({ searchParams }: Props) {
 
   if (!id) notFound()
 
-  const result = await getResult(id)
+  const { data: result, dbOffline } = await getResult(id)
 
   if (!result) notFound()
 
@@ -79,7 +117,9 @@ export default async function ResultsPage({ searchParams }: Props) {
                 {roast.errors} error{roast.errors !== 1 ? 's' : ''}
               </span>
               <span>·</span>
-              <span>$ {new Date(roast.createdAt).toLocaleDateString()}</span>
+              <span suppressHydrationWarning>
+                $ {new Date(roast.createdAt).toLocaleDateString()}
+              </span>
             </div>
           </div>
         </div>
@@ -135,6 +175,14 @@ export default async function ResultsPage({ searchParams }: Props) {
                 <DiffLine key={i} variant={line.variant} code={line.code} />
               ))}
             </div>
+          </div>
+        )}
+
+        {dbOffline && (
+          <div className="flex justify-center">
+            <span className="rounded border border-amber-500/40 bg-amber-500/10 px-3 py-1 font-mono text-[11px] text-amber-300">
+              DB offline
+            </span>
           </div>
         )}
       </main>

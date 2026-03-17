@@ -4,6 +4,7 @@ import { generateObject } from 'ai'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/db'
+import { isDatabaseConnectionError } from '@/db/error-handler'
 import { analysisItems, roasts } from '@/db/schema'
 
 const RoastSchema = z.object({
@@ -64,35 +65,44 @@ export async function POST(req: NextRequest) {
 
   const codeHash = createHash('sha256').update(code.trim()).digest('hex')
 
-  const [roast] = await db.transaction(async (tx) => {
-    const [r] = await tx
-      .insert(roasts)
-      .values({
-        code,
-        codeHash,
-        lang: lang ?? 'unknown',
-        fileName: object.fileName ?? null,
-        score: String(object.score),
-        roastQuote: object.roastQuote,
-        issuesFound: object.issuesFound,
-        errors: object.errors,
-        roastMode: Boolean(roastMode),
-        diff: object.diffLines
-      })
-      .returning({ id: roasts.id })
+  try {
+    const [roast] = await db.transaction(async (tx) => {
+      const [r] = await tx
+        .insert(roasts)
+        .values({
+          code,
+          codeHash,
+          lang: lang ?? 'unknown',
+          fileName: object.fileName ?? null,
+          score: String(object.score),
+          roastQuote: object.roastQuote,
+          issuesFound: object.issuesFound,
+          errors: object.errors,
+          roastMode: Boolean(roastMode),
+          diff: object.diffLines
+        })
+        .returning({ id: roasts.id })
 
-    await tx.insert(analysisItems).values(
-      object.cards.map((card, i) => ({
-        roastId: r.id,
-        severity: card.severity,
-        title: card.title,
-        description: card.description,
-        position: i
-      }))
-    )
+      await tx.insert(analysisItems).values(
+        object.cards.map((card, i) => ({
+          roastId: r.id,
+          severity: card.severity,
+          title: card.title,
+          description: card.description,
+          position: i
+        }))
+      )
 
-    return [r]
-  })
+      return [r]
+    })
 
-  return NextResponse.json({ id: roast.id })
+    return NextResponse.json({ id: roast.id })
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      console.error('Database connection error:', error)
+      return NextResponse.json({ error: 'database_unavailable' }, { status: 503 })
+    }
+
+    throw error
+  }
 }
