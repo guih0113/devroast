@@ -110,7 +110,7 @@ function useCodeEditor(defaultValue: string, onChange?: (code: string) => void) 
           },
           0
         )
-      }, 400)
+      }, 0)
       return
     }
 
