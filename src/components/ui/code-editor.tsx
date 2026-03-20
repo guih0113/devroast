@@ -3,336 +3,426 @@
 import {
   type ComponentProps,
   createContext,
-  useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
+  useMemo,
   useRef,
   useState
 } from 'react'
 import type { BundledLanguage } from 'shiki'
-import { detectLanguage } from '@/hooks/use-language-detection'
+import type { VariantProps } from 'tailwind-variants'
+import { tv } from 'tailwind-variants'
+import { useLanguageDetection } from '@/hooks/use-language-detection'
 import { useShikiHighlighter } from '@/hooks/use-shiki-highlighter'
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '@/lib/languages'
 
-type UseCodeEditorOptions = {
-  defaultValue?: string
-  onChange?: (code: string) => void
-  onLanguageChange?: (lang: string) => void
+interface CodeEditorContextValue {
+  code: string
+  setCode: (code: string, source?: 'typing' | 'paste' | null) => void
+  language: BundledLanguage
+  languageValue: BundledLanguage | 'auto-detect'
+  isAutoDetect: boolean
+  setLanguage: (lang: BundledLanguage) => void
+  setAutoDetect: () => void
+  highlightedHtml: string
+  isHighlighting: boolean
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>
+  highlightRef: React.RefObject<HTMLDivElement | null>
+  lineNumbersRef: React.RefObject<HTMLDivElement | null>
+  handleScroll: () => void
+  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
 }
-
-function useCodeEditor({ defaultValue = '', onChange, onLanguageChange }: UseCodeEditorOptions) {
-  const [code, setCode] = useState(defaultValue)
-  const [language, setLanguage] = useState<BundledLanguage | 'plaintext'>('plaintext')
-  const [isManualOverride, setIsManualOverride] = useState(false)
-  const [highlightedHtml, setHighlightedHtml] = useState('')
-  const [isPickerOpen, setIsPickerOpen] = useState(false)
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const highlightRef = useRef<HTMLDivElement>(null)
-  const lineNumbersRef = useRef<HTMLDivElement>(null)
-
-  const { highlighterReady, highlight, scheduleHighlight } = useShikiHighlighter()
-
-  useEffect(() => {
-    if (!highlighterReady) return
-    const detected = detectLanguage(code)
-    setLanguage(detected)
-    highlight(code, detected).then(setHighlightedHtml)
-  }, [highlighterReady])
-
-  const handleCodeChange = useCallback(
-    (newCode: string) => {
-      setCode(newCode)
-      onChange?.(newCode)
-
-      let activeLang: BundledLanguage | 'plaintext' = language
-      if (!isManualOverride) {
-        const detected = detectLanguage(newCode)
-        setLanguage(detected)
-        onLanguageChange?.(detected)
-        activeLang = detected
-      }
-
-      scheduleHighlight(newCode, activeLang, setHighlightedHtml)
-    },
-    [language, isManualOverride, onChange, onLanguageChange, scheduleHighlight]
-  )
-
-  const handleLanguageSelect = useCallback(
-    (lang: BundledLanguage) => {
-      setLanguage(lang)
-      setIsManualOverride(true)
-      setIsPickerOpen(false)
-      onLanguageChange?.(lang)
-      scheduleHighlight(code, lang, setHighlightedHtml)
-    },
-    [code, onLanguageChange, scheduleHighlight]
-  )
-
-  const syncScroll = useCallback(() => {
-    const ta = textareaRef.current
-    if (!ta) return
-    if (highlightRef.current) {
-      highlightRef.current.scrollTop = ta.scrollTop
-      highlightRef.current.scrollLeft = ta.scrollLeft
-    }
-    if (lineNumbersRef.current) {
-      lineNumbersRef.current.scrollTop = ta.scrollTop
-    }
-  }, [])
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      const ta = textareaRef.current
-      if (!ta) return
-
-      const { selectionStart: ss, selectionEnd: se, value } = ta
-
-      if (e.key === 'Tab') {
-        e.preventDefault()
-        if (e.shiftKey) {
-          const lineStart = value.lastIndexOf('\n', ss - 1) + 1
-          const match = value.slice(lineStart).match(/^( {1,2})/)
-          if (match) {
-            const n = match[1].length
-            const next = value.slice(0, lineStart) + value.slice(lineStart + n)
-            ta.value = next
-            ta.selectionStart = ta.selectionEnd = ss - n
-            handleCodeChange(next)
-          }
-        } else {
-          const next = `${value.slice(0, ss)}  ${value.slice(se)}`
-          ta.value = next
-          ta.selectionStart = ta.selectionEnd = ss + 2
-          handleCodeChange(next)
-        }
-        return
-      }
-
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        const lineStart = value.lastIndexOf('\n', ss - 1) + 1
-        const currentLine = value.slice(lineStart, ss)
-        const indent = currentLine.match(/^(\s*)/)?.[1] ?? ''
-        const lastChar = currentLine.trimEnd().slice(-1)
-        const extra = ['{', '[', '(', ':'].includes(lastChar) ? '  ' : ''
-        const next = `${value.slice(0, ss)}\n${indent}${extra}${value.slice(se)}`
-        ta.value = next
-        ta.selectionStart = ta.selectionEnd = ss + 1 + indent.length + extra.length
-        handleCodeChange(next)
-        return
-      }
-
-      if (e.key === '}') {
-        const lineStart = value.lastIndexOf('\n', ss - 1) + 1
-        const lineContent = value.slice(lineStart, ss)
-        if (/^\s+$/.test(lineContent) && lineContent.length >= 2) {
-          e.preventDefault()
-          const dedented = lineContent.slice(0, -2)
-          const next = `${value.slice(0, lineStart)}${dedented}}${value.slice(se)}`
-          ta.value = next
-          ta.selectionStart = ta.selectionEnd = lineStart + dedented.length + 1
-          handleCodeChange(next)
-        }
-      }
-    },
-    [handleCodeChange]
-  )
-
-  const lineCount = code.split('\n').length
-
-  return {
-    code,
-    language,
-    highlightedHtml,
-    isPickerOpen,
-    setIsPickerOpen,
-    textareaRef,
-    highlightRef,
-    lineNumbersRef,
-    lineCount,
-    handleCodeChange,
-    handleLanguageSelect,
-    handleKeyDown,
-    syncScroll
-  }
-}
-
-type CodeEditorContextValue = ReturnType<typeof useCodeEditor>
 
 const CodeEditorContext = createContext<CodeEditorContextValue | null>(null)
 
 function useCodeEditorContext() {
   const ctx = useContext(CodeEditorContext)
-  if (!ctx) throw new Error('CodeEditor sub-components must be used inside <CodeEditor.Root>')
+  if (!ctx) throw new Error('CodeEditor components must be used within CodeEditor.Root')
   return ctx
 }
 
-type RootProps = Omit<ComponentProps<'div'>, 'onChange'> & {
-  defaultValue?: string
-  onChange?: (code: string) => void
-  onLanguageChange?: (lang: string) => void
+function useCodeEditor(defaultValue: string, onChange?: (code: string) => void) {
+  const [code, setCodeInternal] = useState(defaultValue)
+  const [language, setLanguageInternal] = useState<BundledLanguage>('javascript')
+  const [languageValue, setLanguageValue] = useState<BundledLanguage | 'auto-detect'>('auto-detect')
+  const [highlightedHtml, setHighlightedHtml] = useState('')
+  const [manualLanguage, setManualLanguage] = useState(false)
+  const [isHighlighting, setIsHighlighting] = useState(false)
+  const lastInputRef = useRef<'typing' | 'paste' | null>(null)
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const { scheduleHighlight, isReady } = useShikiHighlighter()
+  const { detectLanguage } = useLanguageDetection()
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const highlightRef = useRef<HTMLDivElement>(null)
+  const lineNumbersRef = useRef<HTMLDivElement>(null)
+
+  const setCode = (newCode: string, source: 'typing' | 'paste' | null = null) => {
+    if (source) lastInputRef.current = source
+    setCodeInternal(newCode)
+    onChange?.(newCode)
+  }
+
+  const setLanguage = (lang: BundledLanguage) => {
+    setLanguageInternal(lang)
+    setLanguageValue(lang)
+    setManualLanguage(true)
+  }
+
+  const setAutoDetect = () => {
+    setManualLanguage(false)
+    setLanguageValue('auto-detect')
+  }
+
+  useEffect(() => {
+    if (!manualLanguage) {
+      const detected = code.trim() ? detectLanguage(code) : null
+      if (detected) {
+        setLanguageInternal(detected)
+        setLanguageValue(detected)
+      } else {
+        setLanguageValue('auto-detect')
+      }
+    }
+  }, [code, manualLanguage, detectLanguage])
+
+  useEffect(() => {
+    if (!isReady || !code.trim()) {
+      setHighlightedHtml('')
+      setIsHighlighting(false)
+      return
+    }
+
+    if (highlightTimerRef.current) {
+      clearTimeout(highlightTimerRef.current)
+    }
+
+    if (lastInputRef.current === 'typing') {
+      setIsHighlighting(true)
+      highlightTimerRef.current = setTimeout(() => {
+        scheduleHighlight(
+          code,
+          language,
+          (html) => {
+            setHighlightedHtml(html)
+            setIsHighlighting(false)
+          },
+          0
+        )
+      }, 400)
+      return
+    }
+
+    if (lastInputRef.current === 'paste') {
+      setIsHighlighting(true)
+    }
+
+    scheduleHighlight(
+      code,
+      language,
+      (html) => {
+        setHighlightedHtml(html)
+        setIsHighlighting(false)
+      },
+      50
+    )
+  }, [code, language, isReady, scheduleHighlight])
+
+  const handleScroll = () => {
+    if (!textareaRef.current || !highlightRef.current || !lineNumbersRef.current) return
+
+    const scrollTop = textareaRef.current.scrollTop
+    const scrollLeft = textareaRef.current.scrollLeft
+
+    highlightRef.current.scrollTop = scrollTop
+    highlightRef.current.scrollLeft = scrollLeft
+    lineNumbersRef.current.scrollTop = scrollTop
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget
+    const { selectionStart, selectionEnd, value } = textarea
+
+    if (
+      (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) ||
+      e.key === 'Backspace' ||
+      e.key === 'Delete' ||
+      e.key === 'Enter' ||
+      e.key === 'Tab'
+    ) {
+      lastInputRef.current = 'typing'
+    }
+
+    if (e.key === 'Tab') {
+      e.preventDefault()
+      const spaces = '  '
+      const newValue = value.substring(0, selectionStart) + spaces + value.substring(selectionEnd)
+      setCode(newValue, 'typing')
+
+      requestAnimationFrame(() => {
+        textarea.selectionStart = textarea.selectionEnd = selectionStart + spaces.length
+      })
+      return
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      const currentLine = value.substring(0, selectionStart).split('\n').pop() || ''
+      const indent = currentLine.match(/^\s*/)?.[0] || ''
+
+      const shouldIndentMore = currentLine.trim().endsWith('{')
+      const newIndent = shouldIndentMore ? indent + '  ' : indent
+
+      const newValue =
+        value.substring(0, selectionStart) + '\n' + newIndent + value.substring(selectionEnd)
+      setCode(newValue, 'typing')
+
+      requestAnimationFrame(() => {
+        textarea.selectionStart = textarea.selectionEnd = selectionStart + 1 + newIndent.length
+      })
+      return
+    }
+
+    if (e.key === '}') {
+      const currentLine = value.substring(0, selectionStart).split('\n').pop() || ''
+      if (currentLine.trim() === '' && currentLine.length >= 2) {
+        e.preventDefault()
+        const dedented = currentLine.slice(0, -2)
+        const lineStart = selectionStart - currentLine.length
+        const newValue =
+          value.substring(0, lineStart) + dedented + '}' + value.substring(selectionEnd)
+        setCode(newValue, 'typing')
+
+        requestAnimationFrame(() => {
+          textarea.selectionStart = textarea.selectionEnd = lineStart + dedented.length + 1
+        })
+        return
+      }
+    }
+  }
+
+  return {
+    code,
+    setCode,
+    language,
+    languageValue,
+    isAutoDetect: !manualLanguage,
+    setLanguage,
+    setAutoDetect,
+    highlightedHtml,
+    isHighlighting,
+    textareaRef,
+    highlightRef,
+    lineNumbersRef,
+    handleScroll,
+    handleKeyDown
+  }
 }
 
-function Root({
-  defaultValue,
-  onChange,
-  onLanguageChange,
-  className,
-  children,
-  ...props
-}: RootProps) {
-  const state = useCodeEditor({ defaultValue, onChange, onLanguageChange })
+const rootVariants = tv({
+  base: 'flex w-full flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900',
+  variants: {},
+  defaultVariants: {}
+})
+
+interface RootProps
+  extends Omit<ComponentProps<'div'>, 'onChange'>,
+    VariantProps<typeof rootVariants> {
+  defaultValue?: string
+  onChange?: (code: string) => void
+}
+
+function Root({ className, defaultValue = '', onChange, children, ...props }: RootProps) {
+  const editor = useCodeEditor(defaultValue, onChange)
 
   return (
-    <CodeEditorContext.Provider value={state}>
-      <div
-        className={`flex flex-col border border-zinc-800 bg-zinc-900${className ? ` ${className}` : ''}`}
-        {...props}
-      >
+    <CodeEditorContext.Provider
+      value={{
+        code: editor.code,
+        setCode: editor.setCode,
+        language: editor.language,
+        languageValue: editor.languageValue,
+        isAutoDetect: editor.isAutoDetect,
+        setLanguage: editor.setLanguage,
+        setAutoDetect: editor.setAutoDetect,
+        highlightedHtml: editor.highlightedHtml,
+        isHighlighting: editor.isHighlighting,
+        textareaRef: editor.textareaRef,
+        highlightRef: editor.highlightRef,
+        lineNumbersRef: editor.lineNumbersRef,
+        handleScroll: editor.handleScroll,
+        handleKeyDown: editor.handleKeyDown
+      }}
+    >
+      <div className={rootVariants({ className })} {...props}>
         {children}
       </div>
     </CodeEditorContext.Provider>
   )
 }
 
-function WindowHeader() {
-  const { language, isPickerOpen, setIsPickerOpen, handleLanguageSelect } = useCodeEditorContext()
-  const label = LANGUAGE_LABELS[language] ?? language
+const windowHeaderVariants = tv({
+  base: 'flex items-center justify-between border-b border-zinc-800 bg-zinc-900 px-4 py-3',
+  variants: {},
+  defaultVariants: {}
+})
+
+interface WindowHeaderProps
+  extends ComponentProps<'div'>,
+    VariantProps<typeof windowHeaderVariants> {}
+
+function WindowHeader({ className, ...props }: WindowHeaderProps) {
+  const { languageValue, setLanguage, setAutoDetect } = useCodeEditorContext()
 
   return (
-    <div className="relative flex h-10 shrink-0 items-center gap-3 border-zinc-800 border-b px-4">
-      <span className="size-2.5 rounded-full bg-red-500" />
-      <span className="size-2.5 rounded-full bg-amber-500" />
-      <span className="size-2.5 rounded-full bg-emerald-500" />
-      <span className="flex-1" />
-
-      <button
-        type="button"
-        onClick={() => setIsPickerOpen((v) => !v)}
-        className="flex items-center gap-1 rounded px-2 py-0.5 font-mono text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
-      >
-        {label}
-        <span className="text-xs text-zinc-600">▾</span>
-      </button>
-
-      {isPickerOpen && (
-        <div className="absolute top-10 right-2 z-50 max-h-56 w-36 overflow-y-auto border border-zinc-800 bg-zinc-950 shadow-lg">
-          {SUPPORTED_LANGUAGES.map((lang) => (
-            <button
-              key={lang}
-              type="button"
-              onClick={() => handleLanguageSelect(lang)}
-              className={`flex w-full items-center px-3 py-1.5 font-mono text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-100 ${
-                lang === language ? 'text-emerald-400' : 'text-zinc-400'
-              }`}
-            >
-              {LANGUAGE_LABELS[lang] ?? lang}
-            </button>
-          ))}
-        </div>
-      )}
+    <div className={windowHeaderVariants({ className })} {...props}>
+      <div className="flex items-center gap-2">
+        <div className="h-3 w-3 rounded-full bg-red-500" />
+        <div className="h-3 w-3 rounded-full bg-yellow-500" />
+        <div className="h-3 w-3 rounded-full bg-green-500" />
+      </div>
+      <LanguageSelect
+        value={languageValue}
+        onChange={(lang) => {
+          if (lang === 'auto-detect') {
+            setAutoDetect()
+            return
+          }
+          setLanguage(lang)
+        }}
+      />
     </div>
   )
 }
 
-function EditorBody({ children }: { children?: React.ReactNode }) {
+const editorBodyVariants = tv({
+  base: 'relative flex h-[320px] w-full overflow-hidden bg-zinc-900',
+  variants: {},
+  defaultVariants: {}
+})
+
+interface EditorBodyProps extends ComponentProps<'div'>, VariantProps<typeof editorBodyVariants> {}
+
+function EditorBody({ className, children, ...props }: EditorBodyProps) {
   return (
-    <div className="flex overflow-hidden" style={{ height: 320 }}>
+    <div className={editorBodyVariants({ className })} {...props}>
       {children}
     </div>
   )
 }
 
-function LineNumbers() {
-  const { lineCount, lineNumbersRef } = useCodeEditorContext()
+const lineNumbersVariants = tv({
+  base: 'h-full shrink-0 overflow-hidden border-r border-zinc-800 bg-zinc-900 px-4 py-4 font-mono text-sm leading-[1.5] text-zinc-600',
+  variants: {},
+  defaultVariants: {}
+})
+
+interface LineNumbersProps
+  extends ComponentProps<'div'>,
+    VariantProps<typeof lineNumbersVariants> {}
+
+function LineNumbers({ className, ...props }: LineNumbersProps) {
+  const { code, lineNumbersRef } = useCodeEditorContext()
+  const lineCount = code.split('\n').length
+  const lineNumbersText = useMemo(
+    () => Array.from({ length: lineCount }, (_, i) => i + 1).join('\n'),
+    [lineCount]
+  )
 
   return (
-    <div
-      ref={lineNumbersRef}
-      className="flex shrink-0 select-none flex-col overflow-hidden border-zinc-800 border-r bg-zinc-950 px-3 py-3"
-      aria-hidden="true"
-    >
-      {Array.from({ length: lineCount }, (_, i) => (
-        <span key={i} className="min-w-5 text-right font-mono text-xs text-zinc-600 leading-5">
-          {i + 1}
-        </span>
-      ))}
+    <div ref={lineNumbersRef} className={lineNumbersVariants({ className })} {...props}>
+      <pre className="m-0 whitespace-pre">{lineNumbersText}</pre>
     </div>
   )
 }
 
-function Highlight() {
-  const { highlightedHtml, highlightRef } = useCodeEditorContext()
+const highlightVariants = tv({
+  base: 'code-editor-highlight pointer-events-none absolute inset-0 overflow-auto whitespace-pre-wrap break-words px-4 py-4 font-mono text-sm leading-[1.5]',
+  variants: {},
+  defaultVariants: {}
+})
 
-  useLayoutEffect(() => {
-    if (highlightRef.current) {
-      highlightRef.current.innerHTML = highlightedHtml
-    }
-  }, [highlightedHtml, highlightRef])
+interface HighlightProps extends ComponentProps<'div'>, VariantProps<typeof highlightVariants> {}
+
+function Highlight({ className, ...props }: HighlightProps) {
+  const { highlightedHtml, highlightRef } = useCodeEditorContext()
 
   return (
     <div
       ref={highlightRef}
-      className="code-editor-highlight pointer-events-none absolute inset-0 overflow-hidden px-4 py-3"
-      aria-hidden="true"
+      className={highlightVariants({ className })}
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: exception
+      dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+      {...props}
     />
   )
 }
 
-function Textarea() {
-  const { code, textareaRef, handleCodeChange, handleKeyDown, syncScroll } = useCodeEditorContext()
+const textareaVariants = tv({
+  base: 'absolute inset-0 resize-none overflow-auto whitespace-pre-wrap break-words bg-transparent px-4 py-4 font-mono text-sm leading-[1.5] text-transparent caret-zinc-100 outline-none',
+  variants: {},
+  defaultVariants: {}
+})
+
+interface TextareaProps extends ComponentProps<'textarea'>, VariantProps<typeof textareaVariants> {}
+
+function Textarea({ className, ...props }: TextareaProps) {
+  const { code, setCode, textareaRef, handleScroll, handleKeyDown } = useCodeEditorContext()
 
   return (
     <textarea
       ref={textareaRef}
       value={code}
-      onChange={(e) => handleCodeChange(e.target.value)}
+      onChange={(e) => {
+        const source = e.nativeEvent instanceof InputEvent ? e.nativeEvent.inputType : null
+        const isPaste = source === 'insertFromPaste'
+        setCode(e.target.value, isPaste ? 'paste' : 'typing')
+      }}
+      onScroll={handleScroll}
       onKeyDown={handleKeyDown}
-      onScroll={syncScroll}
-      className="absolute inset-0 z-10 w-full resize-none bg-transparent px-4 py-3 font-mono text-xs leading-5 outline-none"
-      style={{ color: 'transparent', caretColor: '#e4e4e7', tabSize: 2 }}
       spellCheck={false}
+      autoCapitalize="off"
       autoComplete="off"
       autoCorrect="off"
-      autoCapitalize="off"
-      aria-label="Paste your code here"
+      className={textareaVariants({ className })}
+      {...props}
     />
   )
 }
 
-function LanguageSelect() {
-  const { language, isPickerOpen, setIsPickerOpen, handleLanguageSelect } = useCodeEditorContext()
-  const label = LANGUAGE_LABELS[language] ?? language
+const languageSelectVariants = tv({
+  base: 'cursor-pointer appearance-none rounded border border-zinc-700 bg-zinc-800 px-8 py-1 font-mono text-xs text-zinc-300 outline-none transition hover:border-zinc-600 focus:border-emerald-500',
+  variants: {},
+  defaultVariants: {}
+})
 
+interface LanguageSelectProps
+  extends Omit<ComponentProps<'select'>, 'value' | 'onChange'>,
+    VariantProps<typeof languageSelectVariants> {
+  value: BundledLanguage | 'auto-detect'
+  onChange: (lang: BundledLanguage | 'auto-detect') => void
+}
+
+function LanguageSelect({ className, value, onChange, ...props }: LanguageSelectProps) {
   return (
     <div className="relative">
-      <button
-        type="button"
-        onClick={() => setIsPickerOpen((v) => !v)}
-        className="flex items-center gap-1 rounded px-2 py-0.5 font-mono text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as BundledLanguage | 'auto-detect')}
+        className={languageSelectVariants({ className })}
+        {...props}
       >
-        {label}
-        <span className="text-xs text-zinc-600">▾</span>
-      </button>
-
-      {isPickerOpen && (
-        <div className="absolute top-full right-0 z-50 mt-1 max-h-56 w-36 overflow-y-auto border border-zinc-800 bg-zinc-950 shadow-lg">
-          {SUPPORTED_LANGUAGES.map((lang) => (
-            <button
-              key={lang}
-              type="button"
-              onClick={() => handleLanguageSelect(lang)}
-              className={`flex w-full items-center px-3 py-1.5 font-mono text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-100 ${
-                lang === language ? 'text-emerald-400' : 'text-zinc-400'
-              }`}
-            >
-              {LANGUAGE_LABELS[lang] ?? lang}
-            </button>
-          ))}
-        </div>
-      )}
+        <option value="auto-detect">Auto-detect</option>
+        {SUPPORTED_LANGUAGES.map((lang) => (
+          <option key={lang} value={lang}>
+            {LANGUAGE_LABELS[lang]}
+          </option>
+        ))}
+      </select>
+      <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[10px] text-zinc-400">
+        ▾
+      </span>
     </div>
   )
 }

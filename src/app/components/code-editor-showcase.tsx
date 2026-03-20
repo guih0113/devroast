@@ -2,10 +2,11 @@
 
 import { CodeEditor } from '@/components/ui/code-editor'
 
-const SAMPLE_CODE = `function roast(code) {
-  const score = analyze(code)
-  return score
-}`
+const SAMPLE_CODE = `function greet(name) {
+  console.log('Hello, ' + name + '!')
+}
+
+greet('World')`
 
 export function CodeEditorShowcase() {
   return (

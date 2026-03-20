@@ -43,20 +43,16 @@
   background: transparent !important;
   margin: 0;
   padding: 0;
-  white-space: pre;
+  white-space: pre-wrap;
+  word-break: break-word;
   tab-size: 2;
 }
 
 .code-editor-highlight code {
   display: block;
-  font-family: var(--font-mono), monospace;
-  font-size: 0.75rem;
-  line-height: 1.25rem;
-  white-space: pre;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: inherit;
   tab-size: 2;
-}
-
-.code-editor-highlight .line {
-  display: block;
-  min-height: 1.25rem;
 }

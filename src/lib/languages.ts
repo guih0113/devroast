@@ -1,76 +1,66 @@
 import type { BundledLanguage } from 'shiki'
 
-export const SUPPORTED_LANGUAGES: BundledLanguage[] = [
+export const SUPPORTED_LANGUAGES = [
   'javascript',
   'typescript',
-  'tsx',
   'jsx',
+  'tsx',
   'python',
-  'rust',
-  'go',
   'java',
   'c',
   'cpp',
   'csharp',
+  'go',
+  'rust',
   'php',
   'ruby',
   'swift',
   'kotlin',
+  'dart',
+  'sql',
   'html',
   'css',
-  'scss',
   'json',
   'yaml',
-  'shellscript',
-  'sql',
-  'markdown'
-]
+  'markdown',
+  'bash'
+] as const satisfies readonly BundledLanguage[]
 
-export const LANGUAGE_LABELS: Record<string, string> = {
+export const LANGUAGE_LABELS: Record<(typeof SUPPORTED_LANGUAGES)[number], string> = {
   javascript: 'JavaScript',
   typescript: 'TypeScript',
-  tsx: 'TSX',
   jsx: 'JSX',
+  tsx: 'TSX',
   python: 'Python',
-  rust: 'Rust',
-  go: 'Go',
   java: 'Java',
   c: 'C',
   cpp: 'C++',
   csharp: 'C#',
+  go: 'Go',
+  rust: 'Rust',
   php: 'PHP',
   ruby: 'Ruby',
   swift: 'Swift',
   kotlin: 'Kotlin',
+  dart: 'Dart',
+  sql: 'SQL',
   html: 'HTML',
   css: 'CSS',
-  scss: 'SCSS',
   json: 'JSON',
   yaml: 'YAML',
-  shellscript: 'Shell',
-  sql: 'SQL',
   markdown: 'Markdown',
-  plaintext: 'Plain Text'
+  bash: 'Bash'
 }
 
 export const HLJS_TO_SHIKI: Record<string, BundledLanguage> = {
-  shell: 'shellscript',
-  bash: 'shellscript',
-  sh: 'shellscript',
-  zsh: 'shellscript',
-
-  'c++': 'cpp',
-  'c#': 'csharp',
+  js: 'javascript',
+  ts: 'typescript',
+  py: 'python',
+  rb: 'ruby',
+  sh: 'bash',
+  shell: 'bash',
   cs: 'csharp',
-
-  xml: 'html',
-  xhtml: 'html',
-
+  'c++': 'cpp',
   yml: 'yaml',
-
-  mjs: 'javascript',
-  cjs: 'javascript',
-
-  'objective-c': 'swift',
-  perl: 'ruby'
+  md: 'markdown'
 }

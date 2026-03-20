@@ -1,84 +1,76 @@
+'use client'
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { BundledLanguage } from 'shiki'
-import type { HighlighterCore } from 'shiki/core'
-import { createHighlighterCore } from 'shiki/core'
-import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
+import { createHighlighter } from 'shiki/bundle/web'
 
-let highlighterPromise: Promise<HighlighterCore> | null = null
+let highlighterInstance: Awaited<ReturnType<typeof createHighlighter>> | null = null
+let highlighterPromise: Promise<Awaited<ReturnType<typeof createHighlighter>>> | null = null
 
-function getHighlighter(): Promise<HighlighterCore> {
+async function getHighlighter() {
+  if (highlighterInstance) return highlighterInstance
+
   if (!highlighterPromise) {
-    highlighterPromise = createHighlighterCore({
-      themes: [import('shiki/themes/github-dark.mjs')],
-      langs: [],
-      engine: createJavaScriptRegexEngine()
+    highlighterPromise = createHighlighter({
+      themes: ['github-dark'],
+      langs: []
+    }).then((instance) => {
+      highlighterInstance = instance
+      return instance
     })
   }
+
   return highlighterPromise
 }
 
-type UseShikiHighlighterReturn = {
-  highlighterRef: React.RefObject<HighlighterCore | null>
-  highlighterReady: boolean
-  highlight: (code: string, lang: BundledLanguage | 'plaintext') => Promise<string>
-  scheduleHighlight: (
-    code: string,
-    lang: BundledLanguage | 'plaintext',
-    onResult: (html: string) => void
-  ) => void
-}
-
-export function useShikiHighlighter(): UseShikiHighlighterReturn {
-  const highlighterRef = useRef<HighlighterCore | null>(null)
-  const [highlighterReady, setHighlighterReady] = useState(false)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+export function useShikiHighlighter() {
+  const [isReady, setIsReady] = useState(false)
+  const loadedLanguagesRef = useRef(new Set<BundledLanguage>())
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const idleCallbackRef = useRef<number | null>(null)
 
   useEffect(() => {
-    getHighlighter().then((hl) => {
-      highlighterRef.current = hl
-      setHighlighterReady(true)
+    getHighlighter().then(() => setIsReady(true))
+  }, [])
+
+  const highlight = useCallback(async (code: string, lang: BundledLanguage): Promise<string> => {
+    const highlighter = await getHighlighter()
+
+    if (!loadedLanguagesRef.current.has(lang)) {
+      await highlighter.loadLanguage(lang as Parameters<typeof highlighter.loadLanguage>[0])
+      loadedLanguagesRef.current.add(lang)
+    }
+
+    return highlighter.codeToHtml(code, {
+      lang: lang as Parameters<typeof highlighter.codeToHtml>[1]['lang'],
+      theme: 'github-dark'
     })
   }, [])
 
-  const highlight = useCallback(
-    async (code: string, lang: BundledLanguage | 'plaintext'): Promise<string> => {
-      const hl = highlighterRef.current
-      if (!hl) return ''
+  const scheduleHighlight = useCallback(
+    (code: string, lang: BundledLanguage, callback: (html: string) => void, delay = 50) => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
 
-      try {
-        if (lang !== 'plaintext') {
-          const loaded = hl.getLoadedLanguages()
-          if (!loaded.includes(lang)) {
-            await hl.loadLanguage(
-              (await import(`shiki/langs/${lang}.mjs`)) as Parameters<typeof hl.loadLanguage>[0]
-            )
-          }
+      if (idleCallbackRef.current !== null && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(idleCallbackRef.current)
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        const run = () => {
+          highlight(code, lang).then(callback)
         }
 
-        const raw = hl.codeToHtml(code, {
-          lang: lang === 'plaintext' ? 'text' : lang,
-          theme: 'github-dark'
-        })
-        return raw.replace(/ style="[^"]*"/, '')
-      } catch {
-        return `<pre><code>${code
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')}</code></pre>`
-      }
-    },
-    []
-  )
-
-  const scheduleHighlight = useCallback(
-    (code: string, lang: BundledLanguage | 'plaintext', onResult: (html: string) => void): void => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-      debounceRef.current = setTimeout(() => {
-        highlight(code, lang).then(onResult)
-      }, 150)
+        if ('requestIdleCallback' in window) {
+          idleCallbackRef.current = window.requestIdleCallback(run, { timeout: 200 })
+        } else {
+          run()
+        }
+      }, delay)
     },
     [highlight]
   )
 
-  return { highlighterRef, highlighterReady, highlight, scheduleHighlight }
+  return { highlight, scheduleHighlight, isReady }
 }
