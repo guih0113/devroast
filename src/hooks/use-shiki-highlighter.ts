@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { BundledLanguage } from 'shiki'
-import { createHighlighter } from 'shiki/bundle/web'
+import { createHighlighter } from 'shiki'
+import { SUPPORTED_LANGUAGES } from '@/lib/languages'
 
 let highlighterInstance: Awaited<ReturnType<typeof createHighlighter>> | null = null
 let highlighterPromise: Promise<Awaited<ReturnType<typeof createHighlighter>>> | null = null
@@ -13,7 +14,7 @@ async function getHighlighter() {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
       themes: ['github-dark'],
-      langs: []
+      langs: [...SUPPORTED_LANGUAGES]
     }).then((instance) => {
       highlighterInstance = instance
       return instance
@@ -25,7 +26,6 @@ async function getHighlighter() {
 
 export function useShikiHighlighter() {
   const [isReady, setIsReady] = useState(false)
-  const loadedLanguagesRef = useRef(new Set<BundledLanguage>())
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idleCallbackRef = useRef<number | null>(null)
 
@@ -35,11 +35,6 @@ export function useShikiHighlighter() {
 
   const highlight = useCallback(async (code: string, lang: BundledLanguage): Promise<string> => {
     const highlighter = await getHighlighter()
-
-    if (!loadedLanguagesRef.current.has(lang)) {
-      await highlighter.loadLanguage(lang as Parameters<typeof highlighter.loadLanguage>[0])
-      loadedLanguagesRef.current.add(lang)
-    }
 
     return highlighter.codeToHtml(code, {
       lang: lang as Parameters<typeof highlighter.codeToHtml>[1]['lang'],
