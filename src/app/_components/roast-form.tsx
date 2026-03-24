@@ -22,14 +22,18 @@ const SAMPLE_CODE = `function calculateTotal(items) {
   return total;
 }`
 
+const MAX_CODE_LENGTH = 5000
+
 export function RoastForm() {
   const router = useRouter()
   const [code, setCode] = useState(SAMPLE_CODE)
   const [roastMode, setRoastMode] = useState(true)
   const [loading, setLoading] = useState(false)
 
+  const isOverLimit = code.length > MAX_CODE_LENGTH
+
   async function handleRoast() {
-    if (!code.trim() || loading) return
+    if (!code.trim() || loading || isOverLimit) return
     setLoading(true)
     try {
       const res = await fetch('/api/roast', {
@@ -48,16 +52,23 @@ export function RoastForm() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col">
-      <CodeEditor.Root defaultValue={SAMPLE_CODE} onChange={setCode}>
-        <CodeEditor.WindowHeader />
-        <CodeEditor.EditorBody>
-          <CodeEditor.LineNumbers />
-          <div className="relative flex-1 overflow-hidden">
-            <CodeEditor.Highlight />
-            <CodeEditor.Textarea />
-          </div>
-        </CodeEditor.EditorBody>
-      </CodeEditor.Root>
+      <div className="relative">
+        <CodeEditor.Root defaultValue={SAMPLE_CODE} onChange={setCode}>
+          <CodeEditor.WindowHeader />
+          <CodeEditor.EditorBody>
+            <CodeEditor.LineNumbers />
+            <div className="relative flex-1 overflow-hidden">
+              <CodeEditor.Highlight />
+              <CodeEditor.Textarea />
+            </div>
+          </CodeEditor.EditorBody>
+        </CodeEditor.Root>
+        <div className="pointer-events-none absolute right-4 bottom-4">
+          <span className={`font-mono text-xs ${isOverLimit ? 'text-red-400' : 'text-zinc-600'}`}>
+            {code.length}/{MAX_CODE_LENGTH}
+          </span>
+        </div>
+      </div>
 
       <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -68,7 +79,7 @@ export function RoastForm() {
           />
           <span className="font-mono text-xs text-zinc-600">{'// maximum villainy enabled'}</span>
         </div>
-        <Button variant="primary" size="md" onClick={handleRoast} disabled={loading}>
+        <Button variant="primary" size="md" onClick={handleRoast} disabled={loading || isOverLimit}>
           {loading ? '$ roasting...' : '$ roast my code'}
         </Button>
       </div>
