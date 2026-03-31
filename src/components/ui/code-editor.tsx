@@ -50,6 +50,7 @@ function useCodeEditor(defaultValue: string, onChange?: (code: string) => void) 
   const [isHighlighting, setIsHighlighting] = useState(false)
   const lastInputRef = useRef<'typing' | 'paste' | null>(null)
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { scheduleHighlight, isReady } = useShikiHighlighter()
   const { detectLanguage } = useLanguageDetection()
@@ -138,6 +139,17 @@ function useCodeEditor(defaultValue: string, onChange?: (code: string) => void) 
     highlightRef.current.scrollTop = scrollTop
     highlightRef.current.scrollLeft = scrollLeft
     lineNumbersRef.current.scrollTop = scrollTop
+
+    // Add scrolling class to show scrollbar
+    textareaRef.current.classList.add('scrolling')
+
+    // Remove scrolling class after user stops scrolling
+    if (scrollTimerRef.current) {
+      clearTimeout(scrollTimerRef.current)
+    }
+    scrollTimerRef.current = setTimeout(() => {
+      textareaRef.current?.classList.remove('scrolling')
+    }, 1000)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -313,7 +325,7 @@ function EditorBody({ className, children, ...props }: EditorBodyProps) {
 }
 
 const lineNumbersVariants = tv({
-  base: 'h-full shrink-0 overflow-hidden border-r border-zinc-800 bg-zinc-900 px-4 py-4 font-mono text-sm leading-[1.5] text-zinc-600',
+  base: 'code-editor-line-numbers h-full shrink-0 overflow-hidden border-r border-zinc-800 bg-zinc-900 px-4 py-4 font-mono text-sm leading-[1.5] text-zinc-600',
   variants: {},
   defaultVariants: {}
 })
@@ -360,7 +372,7 @@ function Highlight({ className, ...props }: HighlightProps) {
 }
 
 const textareaVariants = tv({
-  base: 'absolute inset-0 resize-none overflow-auto whitespace-pre-wrap break-words bg-transparent px-4 py-4 font-mono text-sm leading-[1.5] text-transparent caret-zinc-100 outline-none',
+  base: 'code-editor-textarea absolute inset-0 resize-none overflow-auto whitespace-pre-wrap break-words bg-transparent px-4 py-4 font-mono text-sm leading-[1.5] text-transparent caret-zinc-100 outline-none',
   variants: {},
   defaultVariants: {}
 })

@@ -56,3 +56,64 @@
   white-space: inherit;
   tab-size: 2;
 }
+
+/* Custom scrollbar for code editor */
+.code-editor-textarea,
+.code-editor-highlight,
+.code-editor-line-numbers {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.code-editor-textarea:hover,
+.code-editor-textarea:focus,
+.code-editor-textarea.scrolling,
+.code-editor-highlight:hover,
+.code-editor-line-numbers:hover {
+  scrollbar-color: #52525b #18181b;
+}
+
+.code-editor-textarea::-webkit-scrollbar,
+.code-editor-highlight::-webkit-scrollbar,
+.code-editor-line-numbers::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.code-editor-textarea::-webkit-scrollbar-track,
+.code-editor-highlight::-webkit-scrollbar-track,
+.code-editor-line-numbers::-webkit-scrollbar-track {
+  background: transparent;
+  transition: background 0.3s ease;
+}
+
+.code-editor-textarea:hover::-webkit-scrollbar-track,
+.code-editor-textarea:focus::-webkit-scrollbar-track,
+.code-editor-textarea.scrolling::-webkit-scrollbar-track,
+.code-editor-highlight:hover::-webkit-scrollbar-track,
+.code-editor-line-numbers:hover::-webkit-scrollbar-track {
+  background: #18181b;
+}
+
+.code-editor-textarea::-webkit-scrollbar-thumb,
+.code-editor-highlight::-webkit-scrollbar-thumb,
+.code-editor-line-numbers::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.code-editor-textarea:hover::-webkit-scrollbar-thumb,
+.code-editor-textarea:focus::-webkit-scrollbar-thumb,
+.code-editor-textarea.scrolling::-webkit-scrollbar-thumb,
+.code-editor-highlight:hover::-webkit-scrollbar-thumb,
+.code-editor-line-numbers:hover::-webkit-scrollbar-thumb {
+  background: #52525b;
+}
+
+.code-editor-textarea::-webkit-scrollbar-thumb:hover,
+.code-editor-highlight::-webkit-scrollbar-thumb:hover,
+.code-editor-line-numbers::-webkit-scrollbar-thumb:hover {
+  background: #71717a;
+}
