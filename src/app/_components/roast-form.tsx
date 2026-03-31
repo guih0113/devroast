@@ -22,7 +22,7 @@ const SAMPLE_CODE = `function calculateTotal(items) {
   return total;
 }`
 
-const MAX_CODE_LENGTH = 5000
+const MAX_CODE_LENGTH = 2000
 
 export function RoastForm() {
   const router = useRouter()
@@ -52,22 +52,21 @@ export function RoastForm() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col">
-      <div className="relative">
-        <CodeEditor.Root defaultValue={SAMPLE_CODE} onChange={setCode}>
-          <CodeEditor.WindowHeader />
-          <CodeEditor.EditorBody>
-            <CodeEditor.LineNumbers />
-            <div className="relative flex-1 overflow-hidden">
-              <CodeEditor.Highlight />
-              <CodeEditor.Textarea />
-            </div>
-          </CodeEditor.EditorBody>
-        </CodeEditor.Root>
-        <div className="pointer-events-none absolute right-4 bottom-4">
-          <span className={`font-mono text-xs ${isOverLimit ? 'text-red-400' : 'text-zinc-600'}`}>
-            {code.length}/{MAX_CODE_LENGTH}
-          </span>
-        </div>
+      <CodeEditor.Root defaultValue={SAMPLE_CODE} onChange={setCode}>
+        <CodeEditor.WindowHeader />
+        <CodeEditor.EditorBody>
+          <CodeEditor.LineNumbers />
+          <div className="relative flex-1 overflow-hidden">
+            <CodeEditor.Highlight />
+            <CodeEditor.Textarea />
+          </div>
+        </CodeEditor.EditorBody>
+      </CodeEditor.Root>
+
+      <div className="mt-2 flex items-center justify-end">
+        <span className={`font-mono text-xs ${isOverLimit ? 'text-red-400' : 'text-zinc-600'}`}>
+          {code.length}/{MAX_CODE_LENGTH}
+        </span>
       </div>
 
       <div className="mt-3 flex items-center justify-between">
