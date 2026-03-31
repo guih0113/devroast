@@ -22,3 +22,18 @@ export function CodeEditorShowcase() {
     </CodeEditor.Root>
   )
 }
+
+export function CodeEditorReadOnlyShowcase() {
+  return (
+    <CodeEditor.Root defaultValue={SAMPLE_CODE} language="javascript" readOnly>
+      <CodeEditor.WindowHeader />
+      <CodeEditor.EditorBody>
+        <CodeEditor.LineNumbers />
+        <div className="relative flex-1 overflow-hidden">
+          <CodeEditor.Highlight />
+          <CodeEditor.Textarea />
+        </div>
+      </CodeEditor.EditorBody>
+    </CodeEditor.Root>
+  )
+}

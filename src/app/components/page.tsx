@@ -1,12 +1,11 @@
 import { AnalysisCard } from '@/components/ui/analysis-card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CodeBlock } from '@/components/ui/code-block'
 import { DiffLine } from '@/components/ui/diff-line'
 import { LeaderboardRow } from '@/components/ui/leaderboard-row'
 import { ScoreRing } from '@/components/ui/score-ring'
 import { Toggle } from '@/components/ui/toggle'
-import { CodeEditorShowcase } from './code-editor-showcase'
+import { CodeEditorReadOnlyShowcase, CodeEditorShowcase } from './code-editor-showcase'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -129,17 +128,11 @@ export default function ComponentsPage() {
           </Row>
         </Section>
 
-        <Section title="code-block">
-          <Row label="with filename">
-            <CodeBlock
-              code={SAMPLE_CODE}
-              lang="javascript"
-              fileName="roast.js"
-              className="w-full max-w-lg"
-            />
-          </Row>
-          <Row label="no filename">
-            <CodeBlock code={SAMPLE_CODE} lang="javascript" className="w-full max-w-lg" />
+        <Section title="code-editor (read-only)">
+          <Row label="with fixed language">
+            <div className="w-full max-w-lg">
+              <CodeEditorReadOnlyShowcase />
+            </div>
           </Row>
         </Section>
 

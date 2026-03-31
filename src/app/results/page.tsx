@@ -4,13 +4,13 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { BundledLanguage } from 'shiki'
 import { AnalysisCard } from '@/components/ui/analysis-card'
-import { CodeBlock } from '@/components/ui/code-block'
 import { DiffLine } from '@/components/ui/diff-line'
 import { ScoreRing } from '@/components/ui/score-ring'
 import { db } from '@/db'
 import { withDatabaseStatus } from '@/db/error-handler'
 import { analysisItems, roasts } from '@/db/schema'
 import { getVerdict } from '@/lib/score'
+import { CodeViewer } from './_components/code-viewer'
 
 type Props = {
   searchParams: Promise<{ id?: string }>
@@ -131,11 +131,7 @@ export default async function ResultsPage({ searchParams }: Props) {
             <span className="font-bold font-mono text-emerald-500 text-sm">{'// '}</span>
             <span className="font-bold font-mono text-sm text-zinc-100">your_submission</span>
           </div>
-          <CodeBlock
-            code={roast.code}
-            lang={roast.lang as BundledLanguage}
-            fileName={roast.fileName ?? undefined}
-          />
+          <CodeViewer code={roast.code} language={roast.lang as BundledLanguage} />
         </div>
 
         <div className="h-px bg-zinc-800" />

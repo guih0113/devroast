@@ -31,6 +31,7 @@ interface CodeEditorContextValue {
   lineNumbersRef: React.RefObject<HTMLDivElement | null>
   handleScroll: () => void
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
+  readOnly: boolean
 }
 
 const CodeEditorContext = createContext<CodeEditorContextValue | null>(null)
@@ -41,12 +42,26 @@ function useCodeEditorContext() {
   return ctx
 }
 
-function useCodeEditor(defaultValue: string, onChange?: (code: string) => void) {
+interface UseCodeEditorOptions {
+  defaultValue: string
+  onChange?: (code: string) => void
+  readOnly?: boolean
+  language?: BundledLanguage
+}
+
+function useCodeEditor({
+  defaultValue,
+  onChange,
+  readOnly = false,
+  language: fixedLanguage
+}: UseCodeEditorOptions) {
   const [code, setCodeInternal] = useState(defaultValue)
-  const [language, setLanguageInternal] = useState<BundledLanguage>('javascript')
-  const [languageValue, setLanguageValue] = useState<BundledLanguage | 'auto-detect'>('auto-detect')
+  const [language, setLanguageInternal] = useState<BundledLanguage>(fixedLanguage ?? 'javascript')
+  const [languageValue, setLanguageValue] = useState<BundledLanguage | 'auto-detect'>(
+    fixedLanguage ?? 'auto-detect'
+  )
   const [highlightedHtml, setHighlightedHtml] = useState('')
-  const [manualLanguage, setManualLanguage] = useState(false)
+  const [manualLanguage, setManualLanguage] = useState(!!fixedLanguage)
   const [isHighlighting, setIsHighlighting] = useState(false)
   const lastInputRef = useRef<'typing' | 'paste' | null>(null)
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -228,7 +243,8 @@ function useCodeEditor(defaultValue: string, onChange?: (code: string) => void) 
     highlightRef,
     lineNumbersRef,
     handleScroll,
-    handleKeyDown
+    handleKeyDown,
+    readOnly
   }
 }
 
@@ -243,10 +259,20 @@ interface RootProps
     VariantProps<typeof rootVariants> {
   defaultValue?: string
   onChange?: (code: string) => void
+  readOnly?: boolean
+  language?: BundledLanguage
 }
 
-function Root({ className, defaultValue = '', onChange, children, ...props }: RootProps) {
-  const editor = useCodeEditor(defaultValue, onChange)
+function Root({
+  className,
+  defaultValue = '',
+  onChange,
+  readOnly = false,
+  language,
+  children,
+  ...props
+}: RootProps) {
+  const editor = useCodeEditor({ defaultValue, onChange, readOnly, language })
 
   return (
     <CodeEditorContext.Provider
@@ -264,7 +290,8 @@ function Root({ className, defaultValue = '', onChange, children, ...props }: Ro
         highlightRef: editor.highlightRef,
         lineNumbersRef: editor.lineNumbersRef,
         handleScroll: editor.handleScroll,
-        handleKeyDown: editor.handleKeyDown
+        handleKeyDown: editor.handleKeyDown,
+        readOnly: editor.readOnly
       }}
     >
       <div className={rootVariants({ className })} {...props}>
@@ -285,7 +312,7 @@ interface WindowHeaderProps
     VariantProps<typeof windowHeaderVariants> {}
 
 function WindowHeader({ className, ...props }: WindowHeaderProps) {
-  const { languageValue, setLanguage, setAutoDetect } = useCodeEditorContext()
+  const { languageValue, language, setLanguage, setAutoDetect, readOnly } = useCodeEditorContext()
 
   return (
     <div className={windowHeaderVariants({ className })} {...props}>
@@ -294,16 +321,20 @@ function WindowHeader({ className, ...props }: WindowHeaderProps) {
         <div className="h-3 w-3 rounded-full bg-yellow-500" />
         <div className="h-3 w-3 rounded-full bg-green-500" />
       </div>
-      <LanguageSelect
-        value={languageValue}
-        onChange={(lang) => {
-          if (lang === 'auto-detect') {
-            setAutoDetect()
-            return
-          }
-          setLanguage(lang)
-        }}
-      />
+      {readOnly ? (
+        <LanguageLabel language={language} />
+      ) : (
+        <LanguageSelect
+          value={languageValue}
+          onChange={(lang) => {
+            if (lang === 'auto-detect') {
+              setAutoDetect()
+              return
+            }
+            setLanguage(lang)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -350,20 +381,27 @@ function LineNumbers({ className, ...props }: LineNumbersProps) {
 }
 
 const highlightVariants = tv({
-  base: 'code-editor-highlight pointer-events-none absolute inset-0 overflow-auto whitespace-pre-wrap break-words px-4 py-4 font-mono text-sm leading-[1.5]',
-  variants: {},
-  defaultVariants: {}
+  base: 'code-editor-highlight absolute inset-0 overflow-auto whitespace-pre-wrap break-words px-4 py-4 font-mono text-sm leading-[1.5]',
+  variants: {
+    readOnly: {
+      true: 'pointer-events-auto',
+      false: 'pointer-events-none'
+    }
+  },
+  defaultVariants: {
+    readOnly: false
+  }
 })
 
 interface HighlightProps extends ComponentProps<'div'>, VariantProps<typeof highlightVariants> {}
 
 function Highlight({ className, ...props }: HighlightProps) {
-  const { highlightedHtml, highlightRef } = useCodeEditorContext()
+  const { highlightedHtml, highlightRef, readOnly } = useCodeEditorContext()
 
   return (
     <div
       ref={highlightRef}
-      className={highlightVariants({ className })}
+      className={highlightVariants({ readOnly, className })}
       // biome-ignore lint/security/noDangerouslySetInnerHtml: exception
       dangerouslySetInnerHTML={{ __html: highlightedHtml }}
       {...props}
@@ -380,7 +418,10 @@ const textareaVariants = tv({
 interface TextareaProps extends ComponentProps<'textarea'>, VariantProps<typeof textareaVariants> {}
 
 function Textarea({ className, ...props }: TextareaProps) {
-  const { code, setCode, textareaRef, handleScroll, handleKeyDown } = useCodeEditorContext()
+  const { code, setCode, textareaRef, handleScroll, handleKeyDown, readOnly } =
+    useCodeEditorContext()
+
+  if (readOnly) return null
 
   return (
     <textarea
@@ -439,6 +480,28 @@ function LanguageSelect({ className, value, onChange, ...props }: LanguageSelect
   )
 }
 
+const languageLabelVariants = tv({
+  base: 'rounded border border-zinc-700 bg-zinc-800 px-3 py-1 font-mono text-xs text-zinc-300',
+  variants: {},
+  defaultVariants: {}
+})
+
+interface LanguageLabelProps
+  extends ComponentProps<'span'>,
+    VariantProps<typeof languageLabelVariants> {
+  language: BundledLanguage
+}
+
+function LanguageLabel({ className, language, ...props }: LanguageLabelProps) {
+  const label = (LANGUAGE_LABELS as Record<string, string>)[language] ?? language
+
+  return (
+    <span className={languageLabelVariants({ className })} {...props}>
+      {label}
+    </span>
+  )
+}
+
 export const CodeEditor = {
   Root,
   WindowHeader,
@@ -446,5 +509,6 @@ export const CodeEditor = {
   LineNumbers,
   Highlight,
   Textarea,
-  LanguageSelect
+  LanguageSelect,
+  LanguageLabel
 }
