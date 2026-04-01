@@ -340,16 +340,25 @@ function WindowHeader({ className, ...props }: WindowHeaderProps) {
 }
 
 const editorBodyVariants = tv({
-  base: 'relative flex h-[320px] w-full overflow-hidden bg-zinc-900',
-  variants: {},
-  defaultVariants: {}
+  base: 'relative flex w-full overflow-hidden bg-zinc-900',
+  variants: {
+    readOnly: {
+      true: 'h-auto max-h-[500px]',
+      false: 'h-[320px]'
+    }
+  },
+  defaultVariants: {
+    readOnly: false
+  }
 })
 
 interface EditorBodyProps extends ComponentProps<'div'>, VariantProps<typeof editorBodyVariants> {}
 
 function EditorBody({ className, children, ...props }: EditorBodyProps) {
+  const { readOnly } = useCodeEditorContext()
+
   return (
-    <div className={editorBodyVariants({ className })} {...props}>
+    <div className={editorBodyVariants({ readOnly, className })} {...props}>
       {children}
     </div>
   )
@@ -381,11 +390,11 @@ function LineNumbers({ className, ...props }: LineNumbersProps) {
 }
 
 const highlightVariants = tv({
-  base: 'code-editor-highlight absolute inset-0 overflow-auto whitespace-pre-wrap break-words px-4 py-4 font-mono text-sm leading-[1.5]',
+  base: 'code-editor-highlight overflow-auto whitespace-pre-wrap break-words px-4 py-4 font-mono text-sm leading-[1.5]',
   variants: {
     readOnly: {
       true: 'pointer-events-auto',
-      false: 'pointer-events-none'
+      false: 'pointer-events-none absolute inset-0'
     }
   },
   defaultVariants: {

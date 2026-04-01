@@ -29,10 +29,8 @@ export function CodeEditorReadOnlyShowcase() {
       <CodeEditor.WindowHeader />
       <CodeEditor.EditorBody>
         <CodeEditor.LineNumbers />
-        <div className="relative flex-1 overflow-hidden">
-          <CodeEditor.Highlight />
-          <CodeEditor.Textarea />
-        </div>
+        <CodeEditor.Highlight />
+        <CodeEditor.Textarea />
       </CodeEditor.EditorBody>
     </CodeEditor.Root>
   )
