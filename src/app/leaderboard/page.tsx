@@ -12,23 +12,27 @@ import { roasts } from '@/db/schema'
 async function getLeaderboardData() {
   return withDatabaseStatus(
     async () => {
-      const [stats] = await db.select({ total: count(), avgScore: avg(roasts.score) }).from(roasts)
+      // Execute both queries in parallel for better performance
+      const [statsResult, rows] = await Promise.all([
+        db.select({ total: count(), avgScore: avg(roasts.score) }).from(roasts),
+        db
+          .select({
+            id: roasts.id,
+            score: roasts.score,
+            code: roasts.code,
+            lang: roasts.lang,
+            fileName: roasts.fileName,
+            roastCount: sql<number>`(
+          select count(*)::int from roasts r2
+          where r2.code_hash = ${roasts.codeHash}
+        )`
+          })
+          .from(roasts)
+          .orderBy(asc(roasts.score))
+          .limit(50)
+      ])
 
-      const rows = await db
-        .select({
-          id: roasts.id,
-          score: roasts.score,
-          code: roasts.code,
-          lang: roasts.lang,
-          fileName: roasts.fileName,
-          roastCount: sql<number>`(
-        select count(*)::int from roasts r2
-        where r2.code_hash = ${roasts.codeHash}
-      )`
-        })
-        .from(roasts)
-        .orderBy(asc(roasts.score))
-        .limit(50)
+      const [stats] = statsResult
 
       return { stats, rows }
     },

@@ -119,6 +119,81 @@ call API functions, or manage application state. Keep them generic and reusable.
 
 ---
 
+## Styling Standards
+
+### Scrollbar Styling
+
+Always use Tailwind's built-in scrollbar utilities. **Never** create custom CSS in `globals.css` for scrollbars.
+
+**Pattern for hidden scrollbars that appear on interaction:**
+
+```tsx
+const textareaVariants = tv({
+  base: [
+    'overflow-auto',
+    'scrollbar-thin',
+    'scrollbar-track-transparent',
+    'scrollbar-thumb-transparent',
+    'hover:scrollbar-thumb-zinc-600',
+    'focus:scrollbar-thumb-zinc-600'
+  ],
+  // ...
+})
+```
+
+**Available Tailwind scrollbar utilities:**
+- `scrollbar-thin` — thin scrollbar
+- `scrollbar-track-{color}` — scrollbar track color
+- `scrollbar-thumb-{color}` — scrollbar thumb color
+- `hover:scrollbar-thumb-{color}` — scrollbar on hover
+- `focus:scrollbar-thumb-{color}` — scrollbar on focus
+
+---
+
+## Component-Specific Standards
+
+### Code Editor
+
+The code editor component (`code-editor.tsx`) has specific requirements:
+
+1. **Character Limit**
+   - Default maximum: `5000` characters
+   - Display counter in bottom-right corner of editor
+   - Counter shows: `{current}/{max}`
+   - Counter color: `text-zinc-600` (normal) → `text-red-400` (over limit)
+   - Position: `absolute right-4 bottom-4`
+   - Must use `pointer-events-none` to not interfere with editing
+
+2. **Scrollbar Behavior**
+   - Hidden by default (transparent)
+   - Visible on hover and focus
+   - Applied to both `Textarea` and `Highlight` components
+   - Uses Tailwind scrollbar utilities only
+
+**Example implementation:**
+
+```tsx
+// Character limit constant
+const MAX_CODE_LENGTH = 5000
+
+// In component
+const isOverLimit = code.length > MAX_CODE_LENGTH
+
+// Counter display
+<div className="pointer-events-none absolute right-4 bottom-4">
+  <span className={`font-mono text-xs ${isOverLimit ? 'text-red-400' : 'text-zinc-600'}`}>
+    {code.length}/{MAX_CODE_LENGTH}
+  </span>
+</div>
+
+// Button disabled state
+<Button disabled={loading || isOverLimit}>
+  Submit
+</Button>
+```
+
+---
+
 ## Full reference example — `button.tsx`
 
 ```tsx

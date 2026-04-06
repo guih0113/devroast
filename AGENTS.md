@@ -24,12 +24,14 @@ analysis cards, and a suggested diff fix. Routes: `/` (home), `/results`, `/lead
 ```
 src/
 ├── app/
+│   ├── AGENTS.md           # App directory standards (SSR, routing)
 │   ├── layout.tsx          # Root layout — JetBrains Mono font + <Navbar />
 │   ├── page.tsx            # Home — code editor, toggle, leaderboard preview
 │   ├── globals.css         # Tailwind v4 @import, @theme font override, Shiki styles
 │   ├── results/page.tsx    # Results — ScoreRing, CodeBlock, AnalysisCard, DiffLine
 │   └── components/page.tsx # Live component showcase (all variants)
-└── components/ui/          # All UI primitives (see rules below)
+└── components/ui/          # All UI primitives (see AGENTS.md)
+    └── AGENTS.md           # UI component patterns and standards
 ```
 
 Path alias: `@/*` → `src/*`
@@ -51,6 +53,16 @@ Full rules live in `src/components/ui/AGENTS.md`. Key points:
 5. **One component per file**, kebab-case filename. No business logic in UI components.
 6. `'use client'` only when browser APIs or interactivity are required (e.g. `toggle.tsx`).
 7. Async Server Components are allowed (e.g. `code-block.tsx` awaits Shiki).
+8. **Scrollbars**: Use Tailwind utilities only — never custom CSS in `globals.css`.
+
+## App directory rules
+
+Full rules live in `src/app/AGENTS.md`. Key points:
+
+1. **SSR for public pages** — All indexable pages must use `export const dynamic = 'force-dynamic'`
+2. **Async Server Components** — Fetch data directly in page components for SEO
+3. **Character limits** — Code editor enforces 5000 character limit with visual counter
+4. **Database resilience** — All data fetching wrapped with `withDatabaseStatus` helper
 
 ## Patterns to follow
 
