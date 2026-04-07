@@ -1,11 +1,7 @@
 import { initTRPC } from '@trpc/server'
-import { cache } from 'react'
+import type { TRPCContext } from './context'
 
-export const createTRPCContext = cache(async () => {
-  return {}
-})
-
-const t = initTRPC.create()
+const t = initTRPC.context<TRPCContext>().create()
 
 export const createTRPCRouter = t.router
 export const createCallerFactory = t.createCallerFactory

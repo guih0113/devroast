@@ -3,7 +3,7 @@ import 'server-only'
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query'
 import { cache } from 'react'
-import { createTRPCContext } from './init'
+import { createTRPCContext } from './context'
 import { makeQueryClient } from './query-client'
 import { appRouter } from './routers/_app'
 
@@ -15,15 +15,17 @@ export const trpc = createTRPCOptionsProxy({
   queryClient: getQueryClient
 })
 
-// Direct caller for server-only data (not hydrated to client)
-export const caller = appRouter.createCaller(createTRPCContext)
+export async function getCaller() {
+  const ctx = await createTRPCContext()
+  return appRouter.createCaller(ctx)
+}
 
 // Helper components
 export function HydrateClient({ children }: { children: React.ReactNode }) {
   return <HydrationBoundary state={dehydrate(getQueryClient())}>{children}</HydrationBoundary>
 }
 
-export function prefetch<T>(queryOptions: T) {
+export function prefetch(queryOptions: unknown) {
   const queryClient = getQueryClient()
-  void queryClient.prefetchQuery(queryOptions as any)
+  void queryClient.prefetchQuery(queryOptions as never)
 }
