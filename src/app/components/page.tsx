@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { AnalysisCard } from '@/components/ui/analysis-card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -28,7 +29,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   )
 }
 
-const SAMPLE_CODE = `function roast(code) {
+const _SAMPLE_CODE = `function roast(code) {
   const score = analyze(code)
   return score
 }`
@@ -94,7 +95,9 @@ export default function ComponentsPage() {
         <Section title="code-editor">
           <Row label="default (auto-detect language)">
             <div className="w-full max-w-2xl">
-              <CodeEditorShowcase />
+              <Suspense fallback={<div className="h-48 animate-pulse rounded bg-zinc-800" />}>
+                <CodeEditorShowcase />
+              </Suspense>
             </div>
           </Row>
         </Section>
@@ -131,7 +134,9 @@ export default function ComponentsPage() {
         <Section title="code-editor (read-only)">
           <Row label="with fixed language">
             <div className="w-full max-w-lg">
-              <CodeEditorReadOnlyShowcase />
+              <Suspense fallback={<div className="h-48 animate-pulse rounded bg-zinc-800" />}>
+                <CodeEditorReadOnlyShowcase />
+              </Suspense>
             </div>
           </Row>
         </Section>

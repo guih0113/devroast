@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { connection } from 'next/server'
 import { Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { HydrateClient, prefetch, trpc } from '@/trpc/server'
@@ -10,9 +11,8 @@ import { RoastForm } from './_components/roast-form'
 import { StatsFooter } from './_components/stats-footer'
 import { StatsFooterSkeleton } from './_components/stats-footer-skeleton'
 
-export const dynamic = 'force-dynamic'
-
 export default async function HomePage() {
+  await connection()
   prefetch(trpc.roast.getStats.queryOptions())
 
   return (
