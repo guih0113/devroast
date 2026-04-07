@@ -2,6 +2,7 @@ import { asc, avg, count, sql } from 'drizzle-orm'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { LeaderboardRow } from '@/components/ui/leaderboard-row'
+import { Pagination } from '@/components/ui/pagination'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,11 +10,13 @@ import { db } from '@/db'
 import { withDatabaseStatus } from '@/db/error-handler'
 import { roasts } from '@/db/schema'
 
-async function getLeaderboardData() {
+const ITEMS_PER_PAGE = 20
+
+async function getLeaderboardData(page: number) {
   return withDatabaseStatus(
     async () => {
-      // Execute both queries in parallel for better performance
-      const [statsResult, rows] = await Promise.all([
+      // Execute all queries in parallel for better performance
+      const [statsResult, rows, totalEntriesResult] = await Promise.all([
         db.select({ total: count(), avgScore: avg(roasts.score) }).from(roasts),
         db
           .select({
@@ -29,23 +32,35 @@ async function getLeaderboardData() {
           })
           .from(roasts)
           .orderBy(asc(roasts.score))
-          .limit(50)
+          .limit(ITEMS_PER_PAGE)
+          .offset((page - 1) * ITEMS_PER_PAGE),
+        db.select({ total: count() }).from(roasts)
       ])
 
       const [stats] = statsResult
+      const [{ total: totalEntries }] = totalEntriesResult
 
-      return { stats, rows }
+      return { stats, rows, totalEntries: Number(totalEntries) }
     },
-    { stats: { total: 0, avgScore: null }, rows: [] },
+    { stats: { total: 0, avgScore: null }, rows: [], totalEntries: 0 },
     { log: false }
   )
 }
 
-export default async function LeaderboardPage() {
-  const { data, dbOffline } = await getLeaderboardData()
+type Props = {
+  searchParams: Promise<{ page?: string }>
+}
+
+export default async function LeaderboardPage({ searchParams }: Props) {
+  const params = await searchParams
+  const currentPage = Math.max(1, Number(params.page) || 1)
+
+  const { data, dbOffline } = await getLeaderboardData(currentPage)
 
   const totalRoasts = data.stats?.total ?? 0
   const avgScore = data.stats?.avgScore ? Number(data.stats.avgScore).toFixed(1) : null
+  const totalPages = Math.ceil(data.totalEntries / ITEMS_PER_PAGE)
+  const startRank = (currentPage - 1) * ITEMS_PER_PAGE + 1
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -92,7 +107,7 @@ export default async function LeaderboardPage() {
               data.rows.map((entry, idx) => (
                 <Link key={entry.id} href={`/results?id=${entry.id}`} className="group">
                   <div className="flex items-center gap-6 border-zinc-800 border-b px-5 py-4 transition-colors group-hover:bg-zinc-900">
-                    <LeaderboardRow.Rank rank={idx + 1} />
+                    <LeaderboardRow.Rank rank={startRank + idx} />
                     <LeaderboardRow.Score score={Number(entry.score)} />
                     <LeaderboardRow.CodePreview>
                       {entry.code.slice(0, 120)}
@@ -107,6 +122,12 @@ export default async function LeaderboardPage() {
             )}
           </div>
         </div>
+
+        {totalPages > 1 && (
+          <div className="mx-auto flex w-full max-w-4xl justify-center pt-6">
+            <Pagination currentPage={currentPage} totalPages={totalPages} baseUrl="/leaderboard" />
+          </div>
+        )}
 
         {dbOffline && (
           <div className="mx-auto flex w-full max-w-4xl justify-center pt-4">
