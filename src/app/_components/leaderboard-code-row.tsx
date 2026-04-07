@@ -74,9 +74,7 @@ export function LeaderboardCodeRow({ rank, score, code, lang }: LeaderboardCodeR
             className="overflow-hidden"
           >
             <Collapsible.Panel className="border-zinc-800 border-t p-4">
-              <div className="[&_.code-editor-highlight_span]:!text-zinc-100 [&_.code-editor-highlight]:text-zinc-100">
-                <CodeViewer code={code} language={lang} />
-              </div>
+              <CodeViewer code={code} language={lang} />
             </Collapsible.Panel>
           </motion.div>
         )}
