@@ -1,10 +1,12 @@
 'use client'
 
+import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { CodeEditor } from '@/components/ui/code-editor'
 import { Toggle } from '@/components/ui/toggle'
+import { useTRPC } from '@/trpc/client'
 
 const SAMPLE_CODE = `function calculateTotal(items) {
   let total = 0;
@@ -26,6 +28,8 @@ const MAX_CODE_LENGTH = 2000
 
 export function RoastForm() {
   const router = useRouter()
+  const trpc = useTRPC()
+  const { mutateAsync } = useMutation(trpc.roast.create.mutationOptions())
   const [code, setCode] = useState(SAMPLE_CODE)
   const [roastMode, setRoastMode] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -36,14 +40,8 @@ export function RoastForm() {
     if (!code.trim() || loading || isOverLimit) return
     setLoading(true)
     try {
-      const res = await fetch('/api/roast', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, lang: 'javascript', roastMode })
-      })
-      if (!res.ok) throw new Error('roast failed')
-      const { id } = await res.json()
-      router.push(`/results?id=${id}`)
+      const res = await mutateAsync({ code, lang: 'javascript', roastMode })
+      router.push(`/results?id=${res.id}`)
     } catch (err) {
       console.error(err)
       setLoading(false)
