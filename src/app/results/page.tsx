@@ -1,4 +1,3 @@
-import { asc, eq } from 'drizzle-orm'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -6,10 +5,8 @@ import type { BundledLanguage } from 'shiki'
 import { AnalysisCard } from '@/components/ui/analysis-card'
 import { DiffLine } from '@/components/ui/diff-line'
 import { ScoreRing } from '@/components/ui/score-ring'
-import { db } from '@/db'
-import { withDatabaseStatus } from '@/db/error-handler'
-import { analysisItems, roasts } from '@/db/schema'
 import { getVerdict } from '@/lib/score'
+import { getCaller } from '@/trpc/server'
 import { CodeViewer } from './_components/code-viewer'
 
 type Props = {
@@ -20,10 +17,9 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const { id } = await searchParams
   if (!id) return { title: 'devroast' }
 
-  const { data: roast } = await withDatabaseStatus(async () => {
-    const [row] = await db.select().from(roasts).where(eq(roasts.id, id)).limit(1)
-    return row ?? null
-  }, null)
+  const trpc = await getCaller()
+  const { data: result } = await trpc.roast.getResult({ id })
+  const roast = result?.roast ?? null
 
   if (!roast) return { title: 'devroast' }
 
@@ -50,28 +46,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 }
 
-async function getResult(id: string) {
-  return withDatabaseStatus(async () => {
-    const [roast] = await db.select().from(roasts).where(eq(roasts.id, id)).limit(1)
-
-    if (!roast) return null
-
-    const items = await db
-      .select()
-      .from(analysisItems)
-      .where(eq(analysisItems.roastId, id))
-      .orderBy(asc(analysisItems.position))
-
-    return { roast, items }
-  }, null)
-}
-
 export default async function ResultsPage({ searchParams }: Props) {
   const { id } = await searchParams
 
   if (!id) notFound()
 
-  const { data: result, dbOffline } = await getResult(id)
+  const trpc = await getCaller()
+  const { data: result, dbOffline } = await trpc.roast.getResult({ id })
 
   if (!result) notFound()
 
