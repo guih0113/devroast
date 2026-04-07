@@ -199,10 +199,11 @@ function useCodeEditor({
       const indent = currentLine.match(/^\s*/)?.[0] || ''
 
       const shouldIndentMore = currentLine.trim().endsWith('{')
-      const newIndent = shouldIndentMore ? indent + '  ' : indent
+      const newIndent = shouldIndentMore ? `${indent}  ` : indent
 
-      const newValue =
-        value.substring(0, selectionStart) + '\n' + newIndent + value.substring(selectionEnd)
+      const newValue = `${value.substring(0, selectionStart)}\n${newIndent}${value.substring(
+        selectionEnd
+      )}`
       setCode(newValue, 'typing')
 
       requestAnimationFrame(() => {
@@ -217,8 +218,9 @@ function useCodeEditor({
         e.preventDefault()
         const dedented = currentLine.slice(0, -2)
         const lineStart = selectionStart - currentLine.length
-        const newValue =
-          value.substring(0, lineStart) + dedented + '}' + value.substring(selectionEnd)
+        const newValue = `${value.substring(0, lineStart)}${dedented}}${value.substring(
+          selectionEnd
+        )}`
         setCode(newValue, 'typing')
 
         requestAnimationFrame(() => {

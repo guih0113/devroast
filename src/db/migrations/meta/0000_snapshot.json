@@ -54,12 +54,8 @@
           "name": "analysis_items_roast_id_roasts_id_fk",
           "tableFrom": "analysis_items",
           "tableTo": "roasts",
-          "columnsFrom": [
-            "roast_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["roast_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -212,11 +208,7 @@
     "public.severity": {
       "name": "severity",
       "schema": "public",
-      "values": [
-        "critical",
-        "warning",
-        "good"
-      ]
+      "values": ["critical", "warning", "good"]
     }
   },
   "schemas": {},

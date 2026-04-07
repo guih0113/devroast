@@ -5,7 +5,9 @@ export function Navbar() {
     <nav className="flex h-14 items-center justify-between border-zinc-800 border-b bg-zinc-950 px-10">
       <div className="flex items-center gap-2">
         <span className="font-bold font-mono text-emerald-500 text-xl">{'>'}</span>
-        <Link href="/" className="font-medium font-mono text-lg text-zinc-100">devroast</Link>
+        <Link href="/" className="font-medium font-mono text-lg text-zinc-100">
+          devroast
+        </Link>
       </div>
       <div className="flex items-center gap-6">
         <Link
