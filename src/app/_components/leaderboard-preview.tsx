@@ -1,37 +1,10 @@
-import { asc } from 'drizzle-orm'
 import type { BundledLanguage } from 'shiki'
 import { LeaderboardCodeRow } from '@/app/_components/leaderboard-code-row'
-import { db } from '@/db'
-import { withDatabaseStatus } from '@/db/error-handler'
-import { roasts } from '@/db/schema'
-
-async function getPreviewEntries() {
-  return withDatabaseStatus(
-    async () => {
-      const rows = await db
-        .select({
-          id: roasts.id,
-          score: roasts.score,
-          code: roasts.code,
-          lang: roasts.lang
-        })
-        .from(roasts)
-        .orderBy(asc(roasts.score))
-        .limit(3)
-      return rows.map((r, i) => ({
-        rank: i + 1,
-        score: Number(r.score),
-        code: r.code,
-        lang: r.lang as BundledLanguage
-      }))
-    },
-    [],
-    { log: false }
-  )
-}
+import { getCaller } from '@/trpc/server'
 
 export async function LeaderboardPreview() {
-  const previewEntries = await getPreviewEntries()
+  const trpc = await getCaller()
+  const previewEntries = await trpc.leaderboard.getPreview()
 
   return (
     <div className="flex flex-col border border-zinc-800">
@@ -53,7 +26,7 @@ export async function LeaderboardPreview() {
             rank={entry.rank}
             score={entry.score}
             code={entry.code}
-            lang={entry.lang}
+            lang={entry.lang as BundledLanguage}
           />
         ))
       )}

@@ -1,22 +1,9 @@
-import { count } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@/db'
-import { withDatabaseStatus } from '@/db/error-handler'
-import { roasts } from '@/db/schema'
-
-async function getTotalCount() {
-  return withDatabaseStatus(
-    async () => {
-      const [row] = await db.select({ total: count() }).from(roasts)
-      return row?.total ?? 0
-    },
-    0,
-    { log: false }
-  )
-}
+import { getCaller } from '@/trpc/server'
 
 export async function LeaderboardFooter() {
-  const totalCount = await getTotalCount()
+  const trpc = await getCaller()
+  const totalCount = await trpc.leaderboard.getTotalCount()
 
   return (
     <div className="flex items-center justify-center py-2">
