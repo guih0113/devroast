@@ -30,8 +30,11 @@ export function LeaderboardCodeRow({ rank, score, code, lang }: LeaderboardCodeR
   const level = getScoreLevel(score)
   const scoreColor = scoreColors[level]
 
+  // Normalize newlines to avoid hydration mismatches caused by CRLF parsing differences.
+  const normalizedCode = code.replace(/\r\n?/g, '\n')
+
   // Get first 2-3 lines for preview
-  const codeLines = code.split('\n')
+  const codeLines = normalizedCode.split('\n')
   const previewLines = codeLines.slice(0, 3)
   const codePreview = previewLines.join('\n') + (codeLines.length > 3 ? '\n...' : '')
 
@@ -74,7 +77,7 @@ export function LeaderboardCodeRow({ rank, score, code, lang }: LeaderboardCodeR
             className="overflow-hidden"
           >
             <Collapsible.Panel className="border-zinc-800 border-t p-4">
-              <CodeViewer code={code} language={lang} />
+              <CodeViewer code={normalizedCode} language={lang} />
             </Collapsible.Panel>
           </motion.div>
         )}

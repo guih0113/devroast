@@ -9,15 +9,19 @@ export function StatsFooter() {
   const trpc = useTRPC()
   const { data } = useQuery(trpc.roast.getStats.queryOptions())
   const [animate, setAnimate] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
 
   // Start animation after mount to ensure we see the transition from 0
   useEffect(() => {
+    setHydrated(true)
     const timer = requestAnimationFrame(() => setAnimate(true))
     return () => cancelAnimationFrame(timer)
   }, [])
 
-  const total = data?.total ?? 0
-  const avgScore = data?.avgScore ? Number(data.avgScore) : null
+  // Avoid hydration mismatch: server render has no query cache, client might.
+  // We intentionally hide the cached values until after mount.
+  const total = hydrated ? (data?.total ?? 0) : 0
+  const avgScore = hydrated && data?.avgScore ? Number(data.avgScore) : null
 
   // Show 0 initially, then animate to real values
   const displayTotal = animate ? total : 0
