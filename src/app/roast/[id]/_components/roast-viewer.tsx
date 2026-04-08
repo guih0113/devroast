@@ -2,8 +2,10 @@
 
 import { readStreamableValue } from '@ai-sdk/rsc'
 import { useEffect, useState } from 'react'
+import type { BundledLanguage } from 'shiki'
 import { generateRoast } from '@/actions/generate-roast'
-import { RoastDisplay } from '@/components/roast-display'
+import { CodeViewer } from '@/components/code-viewer'
+import { RoastAnalysisSection, RoastDiffSection, RoastHero } from '@/components/roast-display'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import type { AnalysisItem, Roast } from '@/db/schema'
@@ -90,6 +92,7 @@ export function RoastViewer({ roast: initialRoast, items: initialItems }: RoastV
   }
 
   if (isGenerating) {
+    const normalizedCode = roast.code?.replace(/\r\n?/g, '\n') ?? ''
     return (
       <div className="flex min-h-screen flex-col">
         <div className="flex flex-col gap-10 px-20 py-10">
@@ -98,16 +101,68 @@ export function RoastViewer({ roast: initialRoast, items: initialItems }: RoastV
             <span className="font-mono text-sm text-zinc-400">$ analyzing code...</span>
           </div>
 
-          <RoastDisplay roast={roast} items={items} isLoading={true} />
+          <RoastHero roast={roast} isLoading={true} />
+
+          <div className="h-px bg-zinc-800" />
+
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <span className="font-bold font-mono text-emerald-500 text-sm">{'// '}</span>
+              <span className="font-bold font-mono text-sm text-zinc-100">your_submission</span>
+            </div>
+            {normalizedCode ? (
+              <CodeViewer code={normalizedCode} language={roast.lang as BundledLanguage} />
+            ) : (
+              <div className="h-[320px] animate-pulse rounded-lg border border-zinc-800 bg-zinc-900" />
+            )}
+          </div>
+
+          <div className="h-px bg-zinc-800" />
+
+          <RoastAnalysisSection items={items} isLoading={true} />
+
+          {(roast.diff ?? []).length > 0 && (
+            <>
+              <div className="h-px bg-zinc-800" />
+              <RoastDiffSection diff={roast.diff ?? []} />
+            </>
+          )}
         </div>
       </div>
     )
   }
 
+  const normalizedCode = roast.code?.replace(/\r\n?/g, '\n') ?? ''
+  const diff = roast.diff ?? []
+
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="flex flex-col gap-10 px-20 py-10">
-        <RoastDisplay roast={roast} items={items} />
+      <div className="flex flex-col gap-10 px-6 py-10 md:px-20">
+        <RoastHero roast={roast} />
+
+        <div className="h-px bg-zinc-800" />
+
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <span className="font-bold font-mono text-emerald-500 text-sm">{'// '}</span>
+            <span className="font-bold font-mono text-sm text-zinc-100">your_submission</span>
+          </div>
+          <CodeViewer code={normalizedCode} language={roast.lang as BundledLanguage} />
+        </div>
+
+        {items.length > 0 && (
+          <>
+            <div className="h-px bg-zinc-800" />
+            <RoastAnalysisSection items={items} />
+          </>
+        )}
+
+        {diff.length > 0 && (
+          <>
+            <div className="h-px bg-zinc-800" />
+            <RoastDiffSection diff={diff} />
+          </>
+        )}
       </div>
     </div>
   )

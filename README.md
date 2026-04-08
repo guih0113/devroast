@@ -36,5 +36,5 @@ The worst code ever submitted, ranked by score. A public hall of shame for the a
 | Route | Description |
 |---|---|
 | `/` | Home — paste code and submit for roasting |
-| `/results` | Your roast results — score, quote, analysis, and diff |
+| `/roast/[id]` | Your roast results — score, quote, analysis, and diff |
 | `/leaderboard` | The full shame leaderboard |

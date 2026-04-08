@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { BundledLanguage } from 'shiki'
+import type { BundledLanguage, ShikiTransformer } from 'shiki'
 import { createHighlighter } from 'shiki'
 import { SUPPORTED_LANGUAGES } from '@/lib/languages'
 
@@ -24,6 +24,27 @@ async function getHighlighter() {
   return highlighterPromise
 }
 
+function createStripPreBackgroundTransformer(): ShikiTransformer {
+  return {
+    name: 'strip-pre-background',
+    pre(node) {
+      if (!node.properties) return
+
+      const style = node.properties.style
+      if (typeof style !== 'string') return
+
+      const nextStyle = style
+        .split(';')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+        .filter((decl: string) => !/^background-color\s*:/i.test(decl))
+        .join(';')
+
+      node.properties.style = nextStyle ? `${nextStyle};` : ''
+    }
+  }
+}
+
 export function useShikiHighlighter() {
   const [isReady, setIsReady] = useState(false)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -38,7 +59,8 @@ export function useShikiHighlighter() {
 
     return highlighter.codeToHtml(code, {
       lang: lang as Parameters<typeof highlighter.codeToHtml>[1]['lang'],
-      theme: 'github-dark'
+      theme: 'github-dark',
+      transformers: [createStripPreBackgroundTransformer()]
     })
   }, [])
 

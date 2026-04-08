@@ -54,12 +54,8 @@
           "name": "analysis_items_roast_id_roasts_id_fk",
           "tableFrom": "analysis_items",
           "tableTo": "roasts",
-          "columnsFrom": [
-            "roast_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["roast_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -235,20 +231,12 @@
     "public.roast_status": {
       "name": "roast_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "complete",
-        "failed"
-      ]
+      "values": ["pending", "complete", "failed"]
     },
     "public.severity": {
       "name": "severity",
       "schema": "public",
-      "values": [
-        "critical",
-        "warning",
-        "good"
-      ]
+      "values": ["critical", "warning", "good"]
     }
   },
   "schemas": {},

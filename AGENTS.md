@@ -3,7 +3,7 @@
 ## What this is
 
 A web app where users paste code and receive a brutally honest AI quality score, roast quote,
-analysis cards, and a suggested diff fix. Routes: `/` (home), `/results`, `/leaderboard`.
+analysis cards, and a suggested diff fix. Routes: `/` (home), `/roast/[id]`, `/leaderboard`.
 
 ## Stack
 

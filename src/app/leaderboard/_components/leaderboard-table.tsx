@@ -31,7 +31,7 @@ export async function LeaderboardTable({ currentPage }: Props) {
             </div>
           ) : (
             data.rows.map((entry, idx) => (
-              <Link key={entry.id} href={`/results?id=${entry.id}`} className="group">
+              <Link key={entry.id} href={`/roast/${entry.id}`} className="group">
                 <div className="flex items-center gap-6 border-zinc-800 border-b px-5 py-4 transition-colors group-hover:bg-zinc-900">
                   <LeaderboardRow.Rank rank={startRank + idx} />
                   <LeaderboardRow.Score score={Number(entry.score)} />

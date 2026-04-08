@@ -55,7 +55,7 @@ Pages that need to be indexed by search engines or crawled by social media bots 
 
 - `/` (home) — for search engine discovery
 - `/leaderboard` — for indexing leaderboard entries
-- `/results?id=...` — for sharing roast results on social media
+- `/roast/[id]` — for sharing roast results on social media
 
 ### Pages that can use client-side rendering
 

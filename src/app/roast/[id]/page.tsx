@@ -28,7 +28,7 @@ export default async function RoastPage({ params }: Props) {
               DB offline - please try again later
             </span>
             <Link href="/">
-              <button className="font-mono text-sm text-zinc-400 hover:text-zinc-300">
+              <button type="button" className="font-mono text-sm text-zinc-400 hover:text-zinc-300">
                 ← back to home
               </button>
             </Link>

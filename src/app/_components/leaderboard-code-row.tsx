@@ -4,7 +4,7 @@ import { Collapsible } from '@base-ui-components/react/collapsible'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import type { BundledLanguage } from 'shiki'
-import { CodeViewer } from '@/app/results/_components/code-viewer'
+import { CodeViewer } from '@/components/code-viewer'
 
 interface LeaderboardCodeRowProps {
   rank: number

@@ -18,10 +18,8 @@ const spinner = tv({
   }
 })
 
-type SpinnerProps = ComponentProps<'div'> & VariantProps<typeof spinner>
+type SpinnerProps = ComponentProps<'output'> & VariantProps<typeof spinner>
 
 export function Spinner({ size, className, ...props }: SpinnerProps) {
-  return (
-    <div role="status" aria-label="Loading" className={spinner({ size, className })} {...props} />
-  )
+  return <output aria-label="Loading" className={spinner({ size, className })} {...props} />
 }

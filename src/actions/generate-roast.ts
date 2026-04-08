@@ -1,39 +1,48 @@
 'use server'
 
-import { google } from '@ai-sdk/google'
+import { groq } from '@ai-sdk/groq'
 import { createStreamableValue } from '@ai-sdk/rsc'
-import { streamObject } from 'ai'
+import { generateObject } from 'ai'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { analysisItems, roasts } from '@/db/schema'
 import { getRoastSystemPrompt } from '@/lib/prompts'
 
-const RoastSchema = z.object({
-  score: z.number().min(0).max(10),
-  roastQuote: z.string(),
-  fileName: z.string().optional(),
-  issuesFound: z.number().int().min(0),
-  errors: z.number().int().min(0),
-  cards: z
-    .array(
-      z.object({
-        severity: z.enum(['critical', 'warning', 'good']),
-        title: z.string(),
-        description: z.string()
-      })
-    )
-    .min(1)
-    .max(8),
-  diffLines: z
-    .array(
-      z.object({
-        variant: z.enum(['added', 'removed', 'context']),
-        code: z.string()
-      })
-    )
-    .optional()
-})
+// Note: Groq structured outputs require all properties to be listed in `required`.
+// Use `.nullable()` instead of `.optional()` to keep the key required while
+// allowing `null` when unavailable.
+const RoastSchema = z
+  .object({
+    score: z.number().min(0).max(10),
+    roastQuote: z.string(),
+    fileName: z.string().nullable(),
+    issuesFound: z.number().int().min(0),
+    errors: z.number().int().min(0),
+    cards: z
+      .array(
+        z
+          .object({
+            severity: z.enum(['critical', 'warning', 'good']),
+            title: z.string(),
+            description: z.string()
+          })
+          .strict()
+      )
+      .min(1)
+      .max(8),
+    diffLines: z
+      .array(
+        z
+          .object({
+            variant: z.enum(['added', 'removed', 'context']),
+            code: z.string()
+          })
+          .strict()
+      )
+      .nullable()
+  })
+  .strict()
 
 export async function generateRoast(input: {
   id: string
@@ -43,21 +52,24 @@ export async function generateRoast(input: {
 }) {
   const stream = createStreamableValue()
 
+  let didFinish = false
+
   ;(async () => {
     try {
-      const { partialObjectStream, object } = streamObject({
-        model: google('gemini-2.0-flash'),
+      // Groq structured outputs do not support streaming. Generate the full
+      // object in one request, then publish it through the streamable value.
+      const result = await generateObject({
+        model: groq('openai/gpt-oss-20b'),
         schema: RoastSchema,
         system: getRoastSystemPrompt(input.roastMode),
         prompt: `lang: ${input.lang}\n\n\`\`\`${input.lang}\n${input.code}\n\`\`\``
       })
 
-      for await (const partial of partialObjectStream) {
-        stream.update(partial)
-      }
+      const finalObject = result.object
 
-      const finalObject = await object
+      stream.update(finalObject)
       stream.done()
+      didFinish = true
 
       // Update database record to 'complete' status with results
       await db
@@ -66,7 +78,7 @@ export async function generateRoast(input: {
           status: 'complete',
           score: String(finalObject.score),
           roastQuote: finalObject.roastQuote,
-          fileName: finalObject.fileName ?? null,
+          fileName: finalObject.fileName,
           issuesFound: finalObject.issuesFound,
           errors: finalObject.errors,
           diff: finalObject.diffLines ?? []
@@ -92,6 +104,9 @@ export async function generateRoast(input: {
       await db.update(roasts).set({ status: 'failed' }).where(eq(roasts.id, input.id))
 
       stream.error(error)
+      if (!didFinish) {
+        stream.done()
+      }
     }
   })()
 
