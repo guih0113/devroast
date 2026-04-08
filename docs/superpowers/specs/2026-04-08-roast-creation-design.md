@@ -31,12 +31,13 @@ This feature enables users to paste code snippets and receive AI-powered analysi
 ### Flow
 
 1. **Submission:** User pastes code in `RoastForm` on homepage, toggles roast mode, clicks "$ roast my code"
-2. **Redirect:** Client generates UUID via `crypto.randomUUID()`, stores code/lang/roastMode in sessionStorage, redirects to `/roast/[id]`
-3. **Loading:** `/roast/[id]` page displays neutral loading UI ("$ analyzing code...")
-4. **Generation:** Server Action initiates AI streaming via Vercel AI SDK with Gemini
-5. **Streaming:** Results stream progressively (score → quote → cards → diff), UI updates in real-time
-6. **Persistence:** Once complete, data saves to database, sessionStorage clears
-7. **Permanence:** URL `/roast/[id]` now permanently displays the saved roast
+2. **DB Record Creation:** tRPC mutation creates pending roast record in database with `status: 'pending'`, returns UUID
+3. **Redirect:** Client redirects to `/roast/[id]` with the returned UUID
+4. **Loading:** `/roast/[id]` page displays neutral loading UI ("$ analyzing code...")
+5. **Generation:** Server Action initiates AI streaming via Vercel AI SDK with Gemini
+6. **Streaming:** Results stream progressively (score → quote → cards → diff), UI updates in real-time
+7. **Persistence:** Once complete, database record updates to `status: 'complete'` with full results
+8. **Permanence:** URL `/roast/[id]` now permanently displays the saved roast
 
 ### Key Components
 
@@ -98,30 +99,111 @@ Always include at least one "good" card if the code has any redeeming qualities.
 
 ---
 
+## Database Schema Updates
+
+### Add Status Field to Roasts Table
+
+Update `src/db/schema.ts` to include a status field:
+
+```tsx
+export const roastStatusEnum = pgEnum('roast_status', ['pending', 'complete', 'failed'])
+
+export const roasts = pgTable(
+  'roasts',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    code: text().notNull(),
+    codeHash: varchar({ length: 64 }).notNull(),
+    lang: varchar({ length: 64 }).notNull(),
+    fileName: varchar({ length: 255 }),
+    score: numeric({ precision: 4, scale: 2 }),
+    roastQuote: text(),
+    issuesFound: integer().default(0),
+    errors: integer().default(0),
+    roastMode: boolean().notNull().default(false),
+    status: roastStatusEnum().notNull().default('pending'),
+    diff: jsonb()
+      .$type<Array<{ variant: 'added' | 'removed' | 'context'; code: string }>>()
+      .default([]),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  // ... indexes
+)
+```
+
+**Key changes:**
+- Add `roastStatusEnum` with values: `'pending'`, `'complete'`, `'failed'`
+- Add `status` field to roasts table (defaults to `'pending'`)
+- Make `score`, `roastQuote` nullable (only populated after generation completes)
+
+**Migration required:** Generate and run Drizzle migration to add status field.
+
+---
+
 ## URL State Management & Routing
 
 ### RoastForm Changes
 
-On submit:
+On submit, call tRPC mutation to create pending record:
+
 ```tsx
-const id = crypto.randomUUID()
-sessionStorage.setItem(`roast-${id}`, JSON.stringify({ code, lang, roastMode }))
-router.push(`/roast/${id}`)
+async function handleRoast() {
+  if (!code.trim() || loading || isOverLimit) return
+  setLoading(true)
+  
+  try {
+    const { id } = await createPendingRoast({ code, lang, roastMode })
+    router.push(`/roast/${id}`)
+  } catch (err) {
+    console.error(err)
+    setLoading(false)
+  }
+}
+```
+
+**tRPC mutation signature:**
+```tsx
+createPendingRoast: baseProcedure
+  .input(
+    z.object({
+      code: z.string().min(1),
+      lang: z.string(),
+      roastMode: z.boolean()
+    })
+  )
+  .mutation(async ({ input }) => {
+    const codeHash = createHash('sha256').update(input.code.trim()).digest('hex')
+    
+    const [roast] = await db
+      .insert(roasts)
+      .values({
+        code: input.code,
+        codeHash,
+        lang: input.lang,
+        roastMode: input.roastMode,
+        status: 'pending'
+      })
+      .returning({ id: roasts.id })
+    
+    return { id: roast.id }
+  })
 ```
 
 ### `/roast/[id]` Page Logic
 
 1. Extract `[id]` param from URL
-2. Client component checks `sessionStorage.getItem(`roast-${id}`)`
-3. **If found (fresh submission):**
-   - Start AI generation via Server Action
+2. Query database for roast record via tRPC `roast.getResult({ id })`
+3. **If status is 'pending':**
+   - Trigger Server Action for AI generation
    - Show streaming UI with progressive updates
-   - After completion, save to DB and clear sessionStorage
-4. **If not found (direct link):**
-   - Query database for existing roast with this ID via tRPC `roast.getResult`
-   - If exists: Display final results
-   - If doesn't exist: Redirect to `/` with error message
-5. URL `/roast/[id]` permanently shows the saved roast after generation completes
+   - Server Action updates DB record to `status: 'complete'` when done
+4. **If status is 'complete':**
+   - Display final results immediately (no loading state)
+5. **If status is 'failed':**
+   - Show error message with retry button
+   - Retry calls Server Action again
+6. **If record doesn't exist:**
+   - Redirect to `/` with "Roast not found" message
 
 ---
 
@@ -149,21 +231,54 @@ export async function generateRoast(input: {
   
   // Start streaming in background
   ;(async () => {
-    const { partialObjectStream } = await streamObject({
-      model: google('gemini-1.5-flash'),
-      schema: RoastSchema,
-      system: SYSTEM_PROMPT(input.roastMode),
-      prompt: `lang: ${input.lang}\n\n\`\`\`${input.lang}\n${input.code}\n\`\`\``
-    })
-    
-    for await (const partial of partialObjectStream) {
-      stream.update(partial)
+    try {
+      const { partialObjectStream, object } = await streamObject({
+        model: google('gemini-1.5-flash'),
+        schema: RoastSchema,
+        system: SYSTEM_PROMPT(input.roastMode),
+        prompt: `lang: ${input.lang}\n\n\`\`\`${input.lang}\n${input.code}\n\`\`\``
+      })
+      
+      for await (const partial of partialObjectStream) {
+        stream.update(partial)
+      }
+      
+      const finalObject = await object
+      stream.done()
+      
+      // Update database record to 'complete' status with results
+      await db
+        .update(roasts)
+        .set({
+          status: 'complete',
+          score: String(finalObject.score),
+          roastQuote: finalObject.roastQuote,
+          fileName: finalObject.fileName ?? null,
+          issuesFound: finalObject.issuesFound,
+          errors: finalObject.errors,
+          diff: finalObject.diffLines ?? []
+        })
+        .where(eq(roasts.id, input.id))
+      
+      // Insert analysis items
+      await db.insert(analysisItems).values(
+        finalObject.cards.map((card, i) => ({
+          roastId: input.id,
+          severity: card.severity,
+          title: card.title,
+          description: card.description,
+          position: i
+        }))
+      )
+    } catch (error) {
+      // Mark as failed in database
+      await db
+        .update(roasts)
+        .set({ status: 'failed' })
+        .where(eq(roasts.id, input.id))
+      
+      stream.error(error)
     }
-    
-    stream.done()
-    
-    // Save to database after streaming completes
-    await saveToDatabase({ id: input.id, result: finalObject, code, lang, roastMode })
   })()
   
   return stream.value
@@ -172,18 +287,39 @@ export async function generateRoast(input: {
 
 ### Error Handling
 
-- **AI generation fails:** Return error state via stream, allow retry button in UI
-- **Database save fails:** Log error, still show results to user (can attempt save retry)
-- **Partial stream interrupted:** Show what's available, mark as incomplete, offer retry
+- **AI generation fails:** Mark DB record as `status: 'failed'`, stream error to client
+- **Database update fails:** Log error, attempt retry on next page load
+- **Partial stream interrupted:** Mark as `'failed'`, offer retry button that calls Server Action again
 
 ### Database Transaction
 
-After streaming completes, use same transaction logic as current `roast.create`:
+After streaming completes, update the existing pending record:
+
 ```tsx
-await db.transaction(async (tx) => {
-  const [roast] = await tx.insert(roasts).values({...}).returning({ id: roasts.id })
-  await tx.insert(analysisItems).values(cards.map((card, i) => ({...})))
-})
+// Update roast record
+await db
+  .update(roasts)
+  .set({
+    status: 'complete',
+    score: String(finalObject.score),
+    roastQuote: finalObject.roastQuote,
+    fileName: finalObject.fileName ?? null,
+    issuesFound: finalObject.issuesFound,
+    errors: finalObject.errors,
+    diff: finalObject.diffLines ?? []
+  })
+  .where(eq(roasts.id, input.id))
+
+// Insert analysis items
+await db.insert(analysisItems).values(
+  finalObject.cards.map((card, i) => ({
+    roastId: input.id,
+    severity: card.severity,
+    title: card.title,
+    description: card.description,
+    position: i
+  }))
+)
 ```
 
 ---
@@ -216,16 +352,21 @@ page.tsx (Server Component)
 
 ### States
 
-1. **Fresh submission (sessionStorage found):**
+1. **Pending status (fresh submission):**
+   - Query DB returns roast with `status: 'pending'`
+   - Trigger Server Action with roast data (code, lang, roastMode)
    - Show loading → streaming → final result
-   - Clear sessionStorage after save
-2. **Direct link (no sessionStorage):**
-   - Query DB via tRPC `roast.getResult({ id })`
-   - If found: Show final result immediately
-   - If not found: Redirect to `/` with "Roast not found" message
-3. **Error state:**
+   - DB updates to `status: 'complete'`
+2. **Complete status (direct link to finished roast):**
+   - Query DB returns roast with `status: 'complete'`
+   - Show final result immediately (no loading state)
+3. **Failed status:**
+   - Query DB returns roast with `status: 'failed'`
    - Show error message with retry button
-   - Preserve code in sessionStorage for retry
+   - Retry triggers Server Action again
+4. **Record not found:**
+   - DB query returns null
+   - Redirect to `/` with "Roast not found" message
 
 ---
 
@@ -242,25 +383,27 @@ import { readStreamableValue } from 'ai/rsc'
 import { useState, useEffect } from 'react'
 import { generateRoast } from '@/actions/generate-roast'
 
-export function RoastViewer({ id, sessionData }) {
-  const [data, setData] = useState<Partial<RoastResult>>({})
-  const [isGenerating, setIsGenerating] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export function RoastViewer({ roast, items }) {
+  const [data, setData] = useState<Partial<RoastResult>>(
+    roast.status === 'complete' ? roast : {}
+  )
+  const [isGenerating, setIsGenerating] = useState(roast.status === 'pending')
+  const [error, setError] = useState<string | null>(
+    roast.status === 'failed' ? 'Generation failed' : null
+  )
   
   useEffect(() => {
-    if (!sessionData) {
-      // No sessionStorage, will fetch from DB instead
-      setIsGenerating(false)
-      return
+    if (roast.status !== 'pending') {
+      return // Already complete or failed
     }
     
     ;(async () => {
       try {
         const stream = await generateRoast({
-          id,
-          code: sessionData.code,
-          lang: sessionData.lang,
-          roastMode: sessionData.roastMode
+          id: roast.id,
+          code: roast.code,
+          lang: roast.lang,
+          roastMode: roast.roastMode
         })
         
         for await (const partial of readStreamableValue(stream)) {
@@ -268,14 +411,18 @@ export function RoastViewer({ id, sessionData }) {
         }
         
         setIsGenerating(false)
-        // Clear sessionStorage after successful completion
-        sessionStorage.removeItem(`roast-${id}`)
       } catch (err) {
         setError(err.message)
         setIsGenerating(false)
       }
     })()
-  }, [id, sessionData])
+  }, [roast])
+  
+  async function handleRetry() {
+    setError(null)
+    setIsGenerating(true)
+    // Trigger generation again...
+  }
   
   // Render logic...
 }
@@ -352,12 +499,12 @@ interface RoastDisplayProps {
 ### Deprecation Plan
 
 **tRPC router changes:**
-- Keep `roast.create` mutation (backward compatibility)
-- Add comment: `@deprecated Use Server Action generateRoast instead`
+- Update `roast.create` mutation to create pending records (rename to `roast.createPending`)
 - Keep `roast.getResult` query (actively used by `/roast/[id]` and `/results`)
-- Remove deprecated `roast.create` in future cleanup PR
+- Update `roast.getResult` to return status field
+- Add index on `status` field for querying pending roasts
 
-**No database schema changes needed** — existing schema supports all fields.
+**Database schema changes:** See "Database Schema Updates" section above.
 
 ---
 
@@ -366,34 +513,38 @@ interface RoastDisplayProps {
 ### Test Cases
 
 1. **Fresh generation flow:**
-   - Submit code via `RoastForm` → sessionStorage created → redirect to `/roast/[id]`
+   - Submit code via `RoastForm` → tRPC creates pending record → redirect to `/roast/[id]`
    - Verify loading state appears
    - Verify progressive updates (score → quote → cards → diff)
-   - Verify sessionStorage cleared after completion
-   - Verify DB record created
+   - Verify DB record updates to `status: 'complete'`
 
 2. **Direct link to existing roast:**
-   - Navigate to `/roast/[id]` for saved roast
+   - Navigate to `/roast/[id]` for completed roast (`status: 'complete'`)
    - Verify immediate display (no loading state)
    - Verify all data renders correctly
 
-3. **Invalid ID:**
+3. **Pending roast link (edge case):**
+   - User shares link to `/roast/[id]` before generation completes
+   - Verify loading state appears for second user
+   - Verify generation triggers only once (idempotency check)
+
+4. **Invalid ID:**
    - Navigate to `/roast/invalid-uuid`
    - Verify redirect to `/` with error
 
-4. **Roast mode toggle:**
+5. **Roast mode toggle:**
    - Submit with roastMode=true → verify sarcastic tone
    - Submit with roastMode=false → verify professional tone
 
-5. **Error states:**
-   - AI generation fails → verify error message + retry button
-   - Database save fails → verify results still shown, error logged
-   - Stream interrupted → verify partial results shown, retry available
+6. **Error states:**
+   - AI generation fails → verify DB marked as `'failed'`, retry button works
+   - Database update fails → verify error logged, retry available
+   - Stream interrupted → verify status marked `'failed'`, retry works
 
-6. **Edge cases:**
-   - Empty code submission → verify validation error
+7. **Edge cases:**
+   - Empty code submission → verify validation error before DB insert
    - Code over character limit → verify error before submission
-   - Missing sessionStorage on `/roast/[id]` → verify fallback to DB query
+   - Retry on failed roast → verify Server Action called again, status updates
 
 ### Manual Verification
 
@@ -406,19 +557,25 @@ interface RoastDisplayProps {
 
 ## Implementation Checklist
 
+- [ ] Add `roast_status` enum to database schema
+- [ ] Add `status` field to roasts table (migration required)
+- [ ] Make `score`, `roastQuote` nullable in schema
 - [ ] Install `@ai-sdk/google` package
 - [ ] Add `GOOGLE_GENERATIVE_AI_API_KEY` to env files
+- [ ] Create/update `roast.createPending` tRPC mutation
+- [ ] Update `roast.getResult` to include status field
 - [ ] Create `src/actions/generate-roast.ts` Server Action
 - [ ] Create `/roast/[id]/page.tsx` dynamic route
 - [ ] Create `RoastViewer` client component with streaming logic
 - [ ] Extract `RoastDisplay` shared component
-- [ ] Update `RoastForm` to use sessionStorage + redirect
+- [ ] Update `RoastForm` to use `createPending` mutation + redirect
 - [ ] Update `/results/page.tsx` to use `RoastDisplay`
 - [ ] Update system prompt with roastMode-specific instructions
 - [ ] Create skeleton components for loading states
 - [ ] Add error handling and retry logic
-- [ ] Test all flows (fresh generation, direct links, errors)
-- [ ] Update existing tRPC mutations (deprecation comments)
+- [ ] Add idempotency check to prevent duplicate generations
+- [ ] Test all flows (pending, complete, failed, not found)
+- [ ] Test retry mechanism on failed roasts
 
 ---
 
