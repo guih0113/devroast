@@ -44,7 +44,7 @@ This feature enables users to paste code snippets and receive AI-powered analysi
 - `src/app/roast/[id]/_components/roast-viewer.tsx` — Client component handling streaming state
 - `src/components/roast-display.tsx` — Shared component for rendering roast results (used by both `/roast/[id]` and `/results`)
 - `src/actions/generate-roast.ts` — Server Action for AI generation with streaming
-- `src/app/_components/roast-form.tsx` — Updated to use sessionStorage + redirect instead of tRPC mutation
+- `src/app/_components/roast-form.tsx` — Updated to use tRPC mutation for creating pending record + redirect
 
 ---
 
