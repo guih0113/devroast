@@ -26,7 +26,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const score = Number(roast.score)
   const verdict = getVerdict(score)
   const title = `${roast.fileName ?? 'submission'} — ${score.toFixed(1)}/10 (${verdict.label})`
-  const description = roast.roastQuote
+  const description = roast.roastQuote ?? undefined
   const ogUrl = `/og?id=${id}`
 
   return {

@@ -16,7 +16,7 @@ type LeaderboardStats = {
 
 type LeaderboardRow = {
   id: string
-  score: string
+  score: string | null
   code: string
   lang: string
   fileName: string | null
