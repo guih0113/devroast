@@ -19,6 +19,7 @@
     "db:seed": "tsx --env-file=.env.local src/db/seed.ts"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.60",
     "@ai-sdk/openai": "^3.0.41",
     "@base-ui-components/react": "1.0.0-rc.0",
     "@number-flow/react": "^0.6.0",
