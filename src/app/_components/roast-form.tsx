@@ -29,7 +29,7 @@ const MAX_CODE_LENGTH = 2000
 export function RoastForm() {
   const router = useRouter()
   const trpc = useTRPC()
-  const { mutateAsync } = useMutation(trpc.roast.create.mutationOptions())
+  const { mutateAsync } = useMutation(trpc.roast.createPending.mutationOptions())
   const [code, setCode] = useState(SAMPLE_CODE)
   const [roastMode, setRoastMode] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -41,7 +41,7 @@ export function RoastForm() {
     setLoading(true)
     try {
       const res = await mutateAsync({ code, lang: 'javascript', roastMode })
-      router.push(`/results?id=${res.id}`)
+      router.push(`/roast/${res.id}`)
     } catch (err) {
       console.error(err)
       setLoading(false)
