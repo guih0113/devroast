@@ -13,6 +13,7 @@ import {
 } from 'drizzle-orm/pg-core'
 
 export const severityEnum = pgEnum('severity', ['critical', 'warning', 'good'])
+export const roastStatusEnum = pgEnum('roast_status', ['pending', 'complete', 'failed'])
 
 export const roasts = pgTable(
   'roasts',
@@ -22,11 +23,12 @@ export const roasts = pgTable(
     codeHash: varchar({ length: 64 }).notNull(),
     lang: varchar({ length: 64 }).notNull(),
     fileName: varchar({ length: 255 }),
-    score: numeric({ precision: 4, scale: 2 }).notNull(),
-    roastQuote: text().notNull(),
-    issuesFound: integer().notNull().default(0),
-    errors: integer().notNull().default(0),
+    score: numeric({ precision: 4, scale: 2 }),
+    roastQuote: text(),
+    issuesFound: integer().default(0),
+    errors: integer().default(0),
     roastMode: boolean().notNull().default(false),
+    status: roastStatusEnum().notNull().default('pending'),
     diff: jsonb()
       .$type<Array<{ variant: 'added' | 'removed' | 'context'; code: string }>>()
       .notNull()
@@ -36,7 +38,8 @@ export const roasts = pgTable(
   (t) => [
     index('roasts_score_idx').on(t.score),
     index('roasts_code_hash_idx').on(t.codeHash),
-    index('roasts_created_at_idx').on(t.createdAt)
+    index('roasts_created_at_idx').on(t.createdAt),
+    index('roasts_status_idx').on(t.status)
   ]
 )
 
