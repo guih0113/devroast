@@ -94,6 +94,39 @@ export const roastRouter = createTRPCRouter({
       }
     }),
 
+  createPending: baseProcedure
+    .input(
+      z.object({
+        code: z.string().min(1).max(5000),
+        lang: z.string(),
+        roastMode: z.boolean()
+      })
+    )
+    .mutation(async ({ input }) => {
+      const codeHash = createHash('sha256').update(input.code.trim()).digest('hex')
+
+      try {
+        const [roast] = await db
+          .insert(roasts)
+          .values({
+            code: input.code,
+            codeHash,
+            lang: input.lang,
+            roastMode: input.roastMode,
+            status: 'pending'
+          })
+          .returning({ id: roasts.id })
+
+        return { id: roast.id }
+      } catch (error) {
+        if (isDatabaseConnectionError(error)) {
+          throw new TRPCError({ code: 'SERVICE_UNAVAILABLE', message: 'database_unavailable' })
+        }
+        throw error
+      }
+    }),
+
+  // @deprecated - Use createPending + generateRoast Server Action instead
   create: baseProcedure
     .input(
       z.object({
