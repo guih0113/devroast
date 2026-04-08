@@ -2,9 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { BundledLanguage } from 'shiki'
-import { AnalysisCard } from '@/components/ui/analysis-card'
-import { DiffLine } from '@/components/ui/diff-line'
-import { ScoreRing } from '@/components/ui/score-ring'
+import { RoastDisplay } from '@/components/roast-display'
 import { getVerdict } from '@/lib/score'
 import { getCaller } from '@/trpc/server'
 import { CodeViewer } from './_components/code-viewer'
@@ -57,53 +55,21 @@ export default async function ResultsPage({ searchParams }: Props) {
   if (!result) notFound()
 
   const { roast, items } = result
-  const score = Number(roast.score)
-  const verdict = getVerdict(score)
-  const diff = roast.diff ?? []
-
-  const itemRows: (typeof items)[] = []
-  for (let i = 0; i < items.length; i += 2) {
-    itemRows.push(items.slice(i, i + 2))
-  }
 
   return (
     <div className="min-h-screen bg-zinc-950">
       <main className="flex flex-col gap-10 px-20 py-10">
-        <div className="flex items-center gap-12">
-          <ScoreRing score={score} />
-
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2 font-mono text-xs text-zinc-600">
-              <Link href="/" className="transition-colors hover:text-zinc-400">
-                {'#'} devroast
-              </Link>
-              <span>/</span>
-              <span className="text-zinc-400">results</span>
-              <span>/</span>
-              <span>{roast.fileName ?? 'submission'}</span>
-            </div>
-
-            <div className="font-mono text-xs text-zinc-500">{verdict.label}</div>
-
-            <blockquote className="max-w-xl font-bold font-mono text-xl text-zinc-100 leading-snug">
-              &ldquo;{roast.roastQuote}&rdquo;
-            </blockquote>
-
-            <div className="flex items-center gap-4 font-mono text-xs text-zinc-600">
-              <span>
-                {'>'} {roast.issuesFound} issues found
-              </span>
-              <span>·</span>
-              <span>
-                {roast.errors} error{roast.errors !== 1 ? 's' : ''}
-              </span>
-              <span>·</span>
-              <span suppressHydrationWarning>
-                $ {new Date(roast.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 font-mono text-xs text-zinc-600">
+          <Link href="/" className="transition-colors hover:text-zinc-400">
+            {'#'} devroast
+          </Link>
+          <span>/</span>
+          <span className="text-zinc-400">results</span>
+          <span>/</span>
+          <span>{roast.fileName ?? 'submission'}</span>
         </div>
+
+        <RoastDisplay roast={roast} items={items} />
 
         <div className="h-px bg-zinc-800" />
 
@@ -114,46 +80,6 @@ export default async function ResultsPage({ searchParams }: Props) {
           </div>
           <CodeViewer code={roast.code} language={roast.lang as BundledLanguage} />
         </div>
-
-        <div className="h-px bg-zinc-800" />
-
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center gap-2">
-            <span className="font-bold font-mono text-emerald-500 text-sm">{'// '}</span>
-            <span className="font-bold font-mono text-sm text-zinc-100">detailed_analysis</span>
-          </div>
-
-          <div className="flex flex-col gap-5">
-            {itemRows.map((row, rowIdx) => (
-              <div key={rowIdx} className="grid grid-cols-2 gap-5">
-                {row.map((item) => (
-                  <AnalysisCard.Root key={item.id}>
-                    <AnalysisCard.Badge variant={item.severity} />
-                    <AnalysisCard.Title>{item.title}</AnalysisCard.Title>
-                    <AnalysisCard.Description>{item.description}</AnalysisCard.Description>
-                  </AnalysisCard.Root>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="h-px bg-zinc-800" />
-
-        {diff.length > 0 && (
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-2">
-              <span className="font-bold font-mono text-emerald-500 text-sm">{'// '}</span>
-              <span className="font-bold font-mono text-sm text-zinc-100">suggested_fix</span>
-            </div>
-
-            <div className="flex flex-col border border-zinc-800 bg-zinc-900">
-              {diff.map((line, i) => (
-                <DiffLine key={i} variant={line.variant} code={line.code} />
-              ))}
-            </div>
-          </div>
-        )}
 
         {dbOffline && (
           <div className="flex justify-center">
