@@ -4,3 +4,4 @@ node_modules/*
 .worktrees/*
 worktrees/
 worktrees/*
+.env.local
