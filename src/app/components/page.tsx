@@ -142,11 +142,17 @@ export default function ComponentsPage() {
         </Section>
 
         <Section title="diff-line">
-          <Row label="variant">
-            <div className="flex w-full max-w-lg flex-col border border-zinc-800">
-              <DiffLine variant="removed" code="const result = doThing(x, y, z)" />
-              <DiffLine variant="added" code="const result = doThing(x)" />
-              <DiffLine variant="context" code="return result" />
+          <Row label="unified">
+            <div className="flex w-full max-w-2xl flex-col">
+              <DiffLine
+                fileName="roast.ts"
+                language="typescript"
+                diff={[
+                  { variant: 'removed', code: 'const result = doThing(x, y, z)' },
+                  { variant: 'added', code: 'const result = doThing(x)' },
+                  { variant: 'context', code: 'return result' }
+                ]}
+              />
             </div>
           </Row>
         </Section>

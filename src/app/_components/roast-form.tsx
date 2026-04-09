@@ -41,6 +41,7 @@ export function RoastForm() {
     setLoading(true)
     try {
       const res = await mutateAsync({ code, lang: 'javascript', roastMode })
+      sessionStorage.setItem(`roast:generate:${res.id}`, '1')
       router.push(`/roast/${res.id}`)
     } catch (err) {
       console.error(err)

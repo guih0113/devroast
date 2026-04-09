@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { connection } from 'next/server'
 import { getCaller } from '@/trpc/server'
 import { RoastViewer } from './_components/roast-viewer'
 
@@ -8,6 +9,7 @@ type Props = {
 }
 
 export default async function RoastPage({ params }: Props) {
+  await connection()
   const { id } = await params
 
   // Validate UUID format

@@ -7,7 +7,7 @@ import { makeDiff } from './seed/make-diff'
 import { ROAST_QUOTES } from './seed/quotes'
 import { CODE_SNIPPETS, LANGS } from './seed/snippets'
 
-const ROAST_COUNT = 100
+const ROAST_COUNT = 10
 
 async function seed() {
   console.log('Seeding database...')
@@ -34,6 +34,7 @@ async function seed() {
         issuesFound: faker.number.int({ min: 1, max: 20 }),
         errors: faker.number.int({ min: 0, max: 5 }),
         roastMode: faker.datatype.boolean(),
+        status: 'complete',
         diff: makeDiff(snippet.code),
         createdAt: faker.date.between({
           from: new Date('2025-01-01'),

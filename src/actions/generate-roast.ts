@@ -50,6 +50,28 @@ export async function generateRoast(input: {
   lang: string
   roastMode: boolean
 }) {
+  const [existing] = await db
+    .select({
+      status: roasts.status,
+      score: roasts.score,
+      roastQuote: roasts.roastQuote,
+      diff: roasts.diff
+    })
+    .from(roasts)
+    .where(eq(roasts.id, input.id))
+    .limit(1)
+
+  const hasStoredData =
+    Boolean(existing?.score) ||
+    Boolean(existing?.roastQuote) ||
+    (Array.isArray(existing?.diff) && existing.diff.length > 0)
+
+  if (!existing || existing.status !== 'pending' || hasStoredData) {
+    const stream = createStreamableValue()
+    stream.done()
+    return stream.value
+  }
+
   const stream = createStreamableValue()
 
   let didFinish = false

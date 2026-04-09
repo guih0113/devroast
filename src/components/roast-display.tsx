@@ -151,8 +151,18 @@ export function RoastAnalysisSection({
   )
 }
 
-export function RoastDiffSection({ diff = [] }: { diff?: NonNullable<Roast['diff']> }) {
-  if (!diff || diff.length === 0) return null
+export function RoastDiffSection({
+  diff = [],
+  fileName,
+  language,
+  isLoading = false
+}: {
+  diff?: NonNullable<Roast['diff']>
+  fileName?: string
+  language?: Roast['lang']
+  isLoading?: boolean
+}) {
+  if ((!diff || diff.length === 0) && !isLoading) return null
 
   return (
     <div className="flex flex-col gap-6">
@@ -161,11 +171,11 @@ export function RoastDiffSection({ diff = [] }: { diff?: NonNullable<Roast['diff
         <span className="font-bold font-mono text-sm text-zinc-100">suggested_fix</span>
       </div>
 
-      <div className="flex flex-col border border-zinc-800 bg-zinc-900">
-        {diff.map((line, i) => (
-          <DiffLine key={i} variant={line.variant} code={line.code} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="h-40 animate-pulse rounded-lg border border-zinc-800 bg-zinc-900" />
+      ) : (
+        <DiffLine diff={diff} fileName={fileName ?? 'submission'} language={language} />
+      )}
     </div>
   )
 }
@@ -184,7 +194,11 @@ export function RoastDisplay({ roast, items = [], isLoading = false }: RoastDisp
       {(roast.diff ?? []).length > 0 && (
         <>
           <div className="h-px bg-zinc-800" />
-          <RoastDiffSection diff={roast.diff ?? []} />
+          <RoastDiffSection
+            diff={roast.diff ?? []}
+            fileName={roast.fileName ?? 'submission'}
+            language={roast.lang}
+          />
         </>
       )}
     </div>
