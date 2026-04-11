@@ -3,6 +3,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import type { BundledLanguage } from 'shiki'
 import { Button } from '@/components/ui/button'
 import { CodeEditor } from '@/components/ui/code-editor'
 import { Toggle } from '@/components/ui/toggle'
@@ -31,6 +32,7 @@ export function RoastForm() {
   const trpc = useTRPC()
   const { mutateAsync } = useMutation(trpc.roast.createPending.mutationOptions())
   const [code, setCode] = useState(SAMPLE_CODE)
+  const [language, setLanguage] = useState<BundledLanguage>('javascript')
   const [roastMode, setRoastMode] = useState(true)
   const [loading, setLoading] = useState(false)
 
@@ -40,7 +42,7 @@ export function RoastForm() {
     if (!code.trim() || loading || isOverLimit) return
     setLoading(true)
     try {
-      const res = await mutateAsync({ code, lang: 'javascript', roastMode })
+      const res = await mutateAsync({ code, lang: language, roastMode })
       sessionStorage.setItem(`roast:generate:${res.id}`, '1')
       router.push(`/roast/${res.id}`)
     } catch (err) {
@@ -51,7 +53,7 @@ export function RoastForm() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col">
-      <CodeEditor.Root defaultValue={SAMPLE_CODE} onChange={setCode}>
+      <CodeEditor.Root defaultValue={SAMPLE_CODE} onChange={setCode} onLanguageChange={setLanguage}>
         <CodeEditor.WindowHeader />
         <CodeEditor.EditorBody>
           <CodeEditor.LineNumbers />

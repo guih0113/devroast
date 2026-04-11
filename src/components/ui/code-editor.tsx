@@ -45,6 +45,7 @@ function useCodeEditorContext() {
 interface UseCodeEditorOptions {
   defaultValue: string
   onChange?: (code: string) => void
+  onLanguageChange?: (language: BundledLanguage) => void
   readOnly?: boolean
   language?: BundledLanguage
 }
@@ -52,6 +53,7 @@ interface UseCodeEditorOptions {
 function useCodeEditor({
   defaultValue,
   onChange,
+  onLanguageChange,
   readOnly = false,
   language: fixedLanguage
 }: UseCodeEditorOptions) {
@@ -84,6 +86,7 @@ function useCodeEditor({
     setLanguageInternal(lang)
     setLanguageValue(lang)
     setManualLanguage(true)
+    onLanguageChange?.(lang)
   }
 
   const setAutoDetect = () => {
@@ -97,6 +100,7 @@ function useCodeEditor({
       if (detected) {
         setLanguageInternal(detected)
         setLanguageValue(detected)
+        onLanguageChange?.(detected)
       } else {
         setLanguageValue('auto-detect')
       }
@@ -261,6 +265,7 @@ interface RootProps
     VariantProps<typeof rootVariants> {
   defaultValue?: string
   onChange?: (code: string) => void
+  onLanguageChange?: (language: BundledLanguage) => void
   readOnly?: boolean
   language?: BundledLanguage
 }
@@ -269,12 +274,19 @@ function Root({
   className,
   defaultValue = '',
   onChange,
+  onLanguageChange,
   readOnly = false,
   language,
   children,
   ...props
 }: RootProps) {
-  const editor = useCodeEditor({ defaultValue, onChange, readOnly, language })
+  const editor = useCodeEditor({
+    defaultValue,
+    onChange,
+    onLanguageChange,
+    readOnly,
+    language
+  })
 
   return (
     <CodeEditorContext.Provider
