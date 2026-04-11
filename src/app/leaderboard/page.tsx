@@ -1,23 +1,22 @@
 import Link from 'next/link'
-import { Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Pagination } from '@/components/ui/pagination'
 import { ITEMS_PER_PAGE } from '@/trpc/routers/leaderboard'
 import { getCaller } from '@/trpc/server'
 import { LeaderboardStats } from './_components/leaderboard-stats'
-import { LeaderboardStatsSkeleton } from './_components/leaderboard-stats-skeleton'
 import { LeaderboardTable } from './_components/leaderboard-table'
-import { LeaderboardTableSkeleton } from './_components/leaderboard-table-skeleton'
 
 type Props = {
   searchParams: Promise<{ page?: string }>
 }
 
-async function PaginationWrapper({ currentPage }: { currentPage: number }) {
-  const trpc = await getCaller()
-  const { data } = await trpc.leaderboard.getStats()
-
-  const totalRoasts = data?.total ?? 0
+function PaginationWrapper({
+  currentPage,
+  totalRoasts
+}: {
+  currentPage: number
+  totalRoasts: number
+}) {
   const totalPages = Math.ceil(totalRoasts / ITEMS_PER_PAGE)
 
   if (totalPages <= 1) return null
@@ -32,6 +31,13 @@ async function PaginationWrapper({ currentPage }: { currentPage: number }) {
 export default async function LeaderboardPage({ searchParams }: Props) {
   const params = await searchParams
   const currentPage = Math.max(1, Number(params.page) || 1)
+  const trpc = await getCaller()
+  const { data: pageData, dbOffline: pageDbOffline } = await trpc.leaderboard.getPage({
+    page: currentPage
+  })
+
+  const totalRoasts = pageData.stats.total ?? 0
+  const avgScore = pageData.stats.avgScore ? Number(pageData.stats.avgScore).toFixed(1) : null
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -45,32 +51,16 @@ export default async function LeaderboardPage({ searchParams }: Props) {
             {'// the worst code on the internet, ranked by shame'}
           </p>
 
-          <Suspense fallback={<LeaderboardStatsSkeleton />}>
-            <LeaderboardStats />
-          </Suspense>
+          <LeaderboardStats totalRoasts={totalRoasts} avgScore={avgScore} />
         </div>
 
-        <Suspense fallback={<LeaderboardTableSkeleton />}>
-          <LeaderboardTable currentPage={currentPage} />
-        </Suspense>
+        <LeaderboardTable
+          currentPage={currentPage}
+          rows={pageData.rows}
+          dbOffline={pageDbOffline}
+        />
 
-        <Suspense
-          fallback={
-            <div className="mx-auto flex w-full max-w-4xl justify-center pt-6">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" disabled>
-                  ← Previous
-                </Button>
-                <span className="inline-block h-3 w-28 animate-pulse rounded bg-zinc-800" />
-                <Button variant="ghost" size="sm" disabled>
-                  Next →
-                </Button>
-              </div>
-            </div>
-          }
-        >
-          <PaginationWrapper currentPage={currentPage} />
-        </Suspense>
+        <PaginationWrapper currentPage={currentPage} totalRoasts={totalRoasts} />
 
         <div className="mx-auto flex w-full max-w-4xl justify-center pt-4">
           <Link href="/">

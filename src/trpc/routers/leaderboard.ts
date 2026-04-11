@@ -1,5 +1,4 @@
 import { asc, avg, count, sql } from 'drizzle-orm'
-import { cacheLife } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
 import { isDatabaseConnectionError } from '@/db/error-handler'
@@ -7,7 +6,6 @@ import { roasts } from '@/db/schema'
 import { baseProcedure, createTRPCRouter } from '../init'
 
 export const ITEMS_PER_PAGE = 20
-const LEADERBOARD_REVALIDATE_SECONDS = 60 * 60
 
 type LeaderboardStats = {
   total: number
@@ -29,12 +27,6 @@ async function queryStats(): Promise<LeaderboardStats> {
     total: row?.total ?? 0,
     avgScore: row?.avgScore ? Number(row.avgScore).toFixed(1) : null
   }
-}
-
-async function getStatsCached() {
-  'use cache'
-  cacheLife({ revalidate: LEADERBOARD_REVALIDATE_SECONDS, expire: LEADERBOARD_REVALIDATE_SECONDS })
-  return queryStats()
 }
 
 async function queryPage(
@@ -65,12 +57,6 @@ async function queryPage(
   return { stats, rows }
 }
 
-async function getPageCached(page: number) {
-  'use cache'
-  cacheLife({ revalidate: LEADERBOARD_REVALIDATE_SECONDS, expire: LEADERBOARD_REVALIDATE_SECONDS })
-  return queryPage(page)
-}
-
 async function queryPreview(): Promise<
   Array<{ rank: number; score: number; code: string; lang: string }>
 > {
@@ -93,27 +79,15 @@ async function queryPreview(): Promise<
   }))
 }
 
-async function getPreviewCached() {
-  'use cache'
-  cacheLife({ revalidate: LEADERBOARD_REVALIDATE_SECONDS, expire: LEADERBOARD_REVALIDATE_SECONDS })
-  return queryPreview()
-}
-
 async function queryTotalCount(): Promise<number> {
   const [row] = await db.select({ total: count() }).from(roasts)
   return row?.total ?? 0
 }
 
-async function getTotalCountCached() {
-  'use cache'
-  cacheLife({ revalidate: LEADERBOARD_REVALIDATE_SECONDS, expire: LEADERBOARD_REVALIDATE_SECONDS })
-  return queryTotalCount()
-}
-
 export const leaderboardRouter = createTRPCRouter({
   getStats: baseProcedure.query(async () => {
     try {
-      const stats = await getStatsCached()
+      const stats = await queryStats()
       return { data: stats, dbOffline: false }
     } catch (error) {
       if (isDatabaseConnectionError(error)) {
@@ -125,7 +99,7 @@ export const leaderboardRouter = createTRPCRouter({
 
   getTotalCount: baseProcedure.query(async () => {
     try {
-      const total = await getTotalCountCached()
+      const total = await queryTotalCount()
       return { data: total, dbOffline: false }
     } catch (error) {
       if (isDatabaseConnectionError(error)) {
@@ -137,7 +111,7 @@ export const leaderboardRouter = createTRPCRouter({
 
   getPreview: baseProcedure.query(async () => {
     try {
-      const entries = await getPreviewCached()
+      const entries = await queryPreview()
       return { data: entries, dbOffline: false }
     } catch (error) {
       if (isDatabaseConnectionError(error)) {
@@ -155,7 +129,7 @@ export const leaderboardRouter = createTRPCRouter({
     )
     .query(async ({ input }) => {
       try {
-        const { stats, rows } = await getPageCached(input.page)
+        const { stats, rows } = await queryPage(input.page)
         return { data: { stats, rows }, dbOffline: false }
       } catch (error) {
         if (isDatabaseConnectionError(error)) {

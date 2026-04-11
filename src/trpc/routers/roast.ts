@@ -3,6 +3,7 @@ import { openai } from '@ai-sdk/openai'
 import { TRPCError } from '@trpc/server'
 import { generateObject } from 'ai'
 import { asc, avg, count, eq } from 'drizzle-orm'
+import { cacheLife, cacheTag } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
 import { isDatabaseConnectionError } from '@/db/error-handler'
@@ -51,6 +52,37 @@ Given a code snippet, return a JSON object with:
 Be accurate. Be mean if roastMode is true. Always include at least one "good" card if the code has anything right at all.
 `.trim()
 
+const ROAST_REVALIDATE_SECONDS = 60 * 60
+
+async function queryRoastStatus(id: string) {
+  const [row] = await db
+    .select({ status: roasts.status })
+    .from(roasts)
+    .where(eq(roasts.id, id))
+    .limit(1)
+  return row?.status ?? null
+}
+
+async function queryResultById(id: string) {
+  const [roast] = await db.select().from(roasts).where(eq(roasts.id, id)).limit(1)
+  if (!roast) return null
+
+  const items = await db
+    .select()
+    .from(analysisItems)
+    .where(eq(analysisItems.roastId, id))
+    .orderBy(asc(analysisItems.position))
+
+  return { roast, items }
+}
+
+async function getResultCached(id: string, status: 'complete' | 'failed') {
+  'use cache'
+  cacheTag(`roast:${id}:${status}`)
+  cacheLife({ revalidate: ROAST_REVALIDATE_SECONDS, expire: ROAST_REVALIDATE_SECONDS })
+  return queryResultById(id)
+}
+
 export const roastRouter = createTRPCRouter({
   getStats: baseProcedure.query(async () => {
     try {
@@ -76,16 +108,18 @@ export const roastRouter = createTRPCRouter({
     )
     .query(async ({ input }) => {
       try {
-        const [roast] = await db.select().from(roasts).where(eq(roasts.id, input.id)).limit(1)
-        if (!roast) return { data: null, dbOffline: false }
+        const status = await queryRoastStatus(input.id)
+        if (!status) {
+          return { data: null, dbOffline: false }
+        }
 
-        const items = await db
-          .select()
-          .from(analysisItems)
-          .where(eq(analysisItems.roastId, input.id))
-          .orderBy(asc(analysisItems.position))
+        if (status === 'pending') {
+          const result = await queryResultById(input.id)
+          return { data: result, dbOffline: false }
+        }
 
-        return { data: { roast, items }, dbOffline: false }
+        const result = await getResultCached(input.id, status)
+        return { data: result, dbOffline: false }
       } catch (error) {
         if (isDatabaseConnectionError(error)) {
           return { data: null, dbOffline: true }

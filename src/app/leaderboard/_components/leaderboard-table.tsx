@@ -1,16 +1,22 @@
 import Link from 'next/link'
 import { LeaderboardRow } from '@/components/ui/leaderboard-row'
 import { ITEMS_PER_PAGE } from '@/trpc/routers/leaderboard'
-import { getCaller } from '@/trpc/server'
+
+type LeaderboardTableRow = {
+  id: string
+  score: string | null
+  code: string
+  lang: string
+  roastCount: number
+}
 
 type Props = {
   currentPage: number
+  rows: LeaderboardTableRow[]
+  dbOffline: boolean
 }
 
-export async function LeaderboardTable({ currentPage }: Props) {
-  const trpc = await getCaller()
-  const { data, dbOffline } = await trpc.leaderboard.getPage({ page: currentPage })
-
+export function LeaderboardTable({ currentPage, rows, dbOffline }: Props) {
   const startRank = (currentPage - 1) * ITEMS_PER_PAGE + 1
 
   return (
@@ -25,12 +31,12 @@ export async function LeaderboardTable({ currentPage }: Props) {
             <span className="w-24 shrink-0 text-right font-mono text-xs text-zinc-600">lang</span>
           </div>
 
-          {data.rows.length === 0 ? (
+          {rows.length === 0 ? (
             <div className="px-5 py-12 text-center font-mono text-xs text-zinc-600">
               {'// no submissions yet — be the first to get roasted'}
             </div>
           ) : (
-            data.rows.map((entry, idx) => (
+            rows.map((entry, idx) => (
               <Link key={entry.id} href={`/roast/${entry.id}`} className="group">
                 <div className="flex items-center gap-6 border-zinc-800 border-b px-5 py-4 transition-colors group-hover:bg-zinc-900">
                   <LeaderboardRow.Rank rank={startRank + idx} />

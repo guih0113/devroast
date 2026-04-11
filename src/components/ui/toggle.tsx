@@ -44,11 +44,11 @@ export function Toggle({
   ...props
 }: ToggleProps) {
   const { root, track, thumb, label: labelClass } = switchVariants()
+  const stateProps = checked === undefined ? { defaultChecked } : { checked }
 
   return (
     <Switch.Root
-      checked={checked}
-      defaultChecked={defaultChecked}
+      {...stateProps}
       onCheckedChange={onCheckedChange}
       className={root({ className })}
       {...props}
