@@ -62,12 +62,15 @@
 /* Custom scrollbar for code editor */
 .code-editor-textarea,
 .code-editor-highlight,
-.code-editor-line-numbers {
+.code-editor-line-numbers,
+.code-editor-body {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   transition: scrollbar-color 0.3s ease;
 }
 
+.code-editor-body:hover,
+.code-editor-body.scrolling,
 .code-editor-textarea:hover,
 .code-editor-textarea:focus,
 .code-editor-textarea.scrolling,
@@ -78,18 +81,22 @@
 
 .code-editor-textarea::-webkit-scrollbar,
 .code-editor-highlight::-webkit-scrollbar,
-.code-editor-line-numbers::-webkit-scrollbar {
+.code-editor-line-numbers::-webkit-scrollbar,
+.code-editor-body::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 .code-editor-textarea::-webkit-scrollbar-track,
 .code-editor-highlight::-webkit-scrollbar-track,
-.code-editor-line-numbers::-webkit-scrollbar-track {
+.code-editor-line-numbers::-webkit-scrollbar-track,
+.code-editor-body::-webkit-scrollbar-track {
   background: transparent;
   transition: background 0.3s ease;
 }
 
+.code-editor-body:hover::-webkit-scrollbar-track,
+.code-editor-body.scrolling::-webkit-scrollbar-track,
 .code-editor-textarea:hover::-webkit-scrollbar-track,
 .code-editor-textarea:focus::-webkit-scrollbar-track,
 .code-editor-textarea.scrolling::-webkit-scrollbar-track,
@@ -100,12 +107,15 @@
 
 .code-editor-textarea::-webkit-scrollbar-thumb,
 .code-editor-highlight::-webkit-scrollbar-thumb,
-.code-editor-line-numbers::-webkit-scrollbar-thumb {
+.code-editor-line-numbers::-webkit-scrollbar-thumb,
+.code-editor-body::-webkit-scrollbar-thumb {
   background: transparent;
   border-radius: 4px;
   transition: background 0.3s ease;
 }
 
+.code-editor-body:hover::-webkit-scrollbar-thumb,
+.code-editor-body.scrolling::-webkit-scrollbar-thumb,
 .code-editor-textarea:hover::-webkit-scrollbar-thumb,
 .code-editor-textarea:focus::-webkit-scrollbar-thumb,
 .code-editor-textarea.scrolling::-webkit-scrollbar-thumb,
@@ -116,6 +126,7 @@
 
 .code-editor-textarea::-webkit-scrollbar-thumb:hover,
 .code-editor-highlight::-webkit-scrollbar-thumb:hover,
-.code-editor-line-numbers::-webkit-scrollbar-thumb:hover {
+.code-editor-line-numbers::-webkit-scrollbar-thumb:hover,
+.code-editor-body::-webkit-scrollbar-thumb:hover {
   background: #71717a;
 }

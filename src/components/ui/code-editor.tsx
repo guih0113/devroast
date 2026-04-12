@@ -354,11 +354,11 @@ function WindowHeader({ className, ...props }: WindowHeaderProps) {
 }
 
 const editorBodyVariants = tv({
-  base: 'relative flex w-full overflow-hidden bg-zinc-900',
+  base: 'code-editor-body relative flex w-full bg-zinc-900',
   variants: {
     readOnly: {
-      true: 'h-auto max-h-[500px]',
-      false: 'h-[320px]'
+      true: 'h-auto max-h-[500px] overflow-auto',
+      false: 'h-[320px] overflow-hidden'
     }
   },
   defaultVariants: {
@@ -379,8 +379,13 @@ function EditorBody({ className, children, ...props }: EditorBodyProps) {
 }
 
 const lineNumbersVariants = tv({
-  base: 'code-editor-line-numbers h-full shrink-0 overflow-hidden border-r border-zinc-800 bg-zinc-900 px-4 py-4 font-mono text-sm leading-[1.5] text-zinc-600',
-  variants: {},
+  base: 'code-editor-line-numbers h-full shrink-0 border-r border-zinc-800 bg-zinc-900 px-4 py-4 font-mono text-sm leading-[1.5] text-zinc-600',
+  variants: {
+    readOnly: {
+      true: 'overflow-visible',
+      false: 'overflow-hidden'
+    }
+  },
   defaultVariants: {}
 })
 
@@ -389,7 +394,7 @@ interface LineNumbersProps
     VariantProps<typeof lineNumbersVariants> {}
 
 function LineNumbers({ className, ...props }: LineNumbersProps) {
-  const { code, lineNumbersRef } = useCodeEditorContext()
+  const { code, lineNumbersRef, readOnly } = useCodeEditorContext()
   const lineCount = code.split('\n').length
   const lineNumbersText = useMemo(
     () => Array.from({ length: lineCount }, (_, i) => i + 1).join('\n'),
@@ -397,17 +402,17 @@ function LineNumbers({ className, ...props }: LineNumbersProps) {
   )
 
   return (
-    <div ref={lineNumbersRef} className={lineNumbersVariants({ className })} {...props}>
+    <div ref={lineNumbersRef} className={lineNumbersVariants({ readOnly, className })} {...props}>
       <pre className="m-0 whitespace-pre">{lineNumbersText}</pre>
     </div>
   )
 }
 
 const highlightVariants = tv({
-  base: 'code-editor-highlight overflow-auto whitespace-pre-wrap break-words px-4 py-4 font-mono text-sm leading-[1.5]',
+  base: 'code-editor-highlight whitespace-pre-wrap break-words px-4 py-4 font-mono text-sm leading-[1.5]',
   variants: {
     readOnly: {
-      true: 'pointer-events-auto',
+      true: 'pointer-events-auto min-w-0 flex-1 overflow-visible',
       false: 'pointer-events-none absolute inset-0'
     }
   },

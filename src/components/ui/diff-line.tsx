@@ -8,9 +8,9 @@ import { tv, type VariantProps } from 'tailwind-variants'
 
 const diffLine = tv({
   slots: {
-    root: 'overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 font-mono text-xs text-zinc-100',
+    root: 'overflow-hidden rounded-lg border border-zinc-800 font-mono text-xs text-zinc-100',
     viewer: 'block',
-    fallback: 'whitespace-pre-wrap px-4 py-3 text-xs text-zinc-500'
+    fallback: 'whitespace-pre-wrap border-zinc-800 border-t px-4 py-4 text-xs text-zinc-300'
   },
   variants: {
     tone: {
@@ -57,6 +57,11 @@ function buildUnifiedPatch(diff: DiffEntry[], fileName: string) {
   ].join('\n')
 }
 
+function getPatchBody(patch: string) {
+  const lines = patch.split('\n')
+  return lines.slice(2).join('\n')
+}
+
 export function DiffLine({
   diff,
   fileName = 'submission',
@@ -74,25 +79,31 @@ export function DiffLine({
   if (!diff || diff.length === 0) return null
 
   const patch = buildUnifiedPatch(diff, fileName)
+  const headerLabel = `a/${fileName} -> b/${fileName}`
+  const patchBody = getPatchBody(patch)
   const { root, viewer, fallback } = diffLine({ tone })
 
   if (!isMounted || typeof Worker === 'undefined') {
     return (
       <div className={root({ className })} {...props}>
-        <pre className={fallback()}>{patch}</pre>
+        <div className="border-zinc-800 border-b px-4 py-3 text-xs text-zinc-400">
+          {headerLabel}
+        </div>
+        <pre className={fallback()}>{patchBody}</pre>
       </div>
     )
   }
 
   return (
     <div className={root({ className })} {...props}>
+      <div className="border-zinc-800 border-b px-4 py-3 text-xs text-zinc-400">{headerLabel}</div>
       <WorkerPoolContextProvider
         poolOptions={{
           workerFactory: () =>
             new Worker(new URL('@pierre/diffs/worker/worker.js', import.meta.url))
         }}
         highlighterOptions={{
-          theme: 'pierre-dark',
+          theme: 'min-dark',
           langs: language ? [language] : undefined
         }}
       >
@@ -100,7 +111,7 @@ export function DiffLine({
           patch={patch}
           options={{
             diffStyle: 'unified',
-            disableFileHeader: false,
+            disableFileHeader: true,
             disableLineNumbers: false
           }}
           className={viewer()}
